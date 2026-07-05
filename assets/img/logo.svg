@@ -1,0 +1,8 @@
+<svg viewBox="0 0 200 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RAWGAT">
+  <g fill="#1c2a33">
+    <path d="M60 78 C58 60, 66 46, 82 42 C86 32, 98 26, 110 30 C118 24, 132 24, 140 32 C150 30, 160 38, 158 48 C165 50, 168 60, 162 66 C166 74, 160 82, 152 80 L150 80 L60 80 Z"/>
+    <path d="M20 100 L75 55 L95 78 L115 50 L180 100 Z"/>
+  </g>
+  <path d="M20 100 L75 55 L86 66.5 L60 100 Z" fill="#ffffff" opacity="0.14"/>
+  <path d="M115 50 L140 74 L120 100 L95 78 Z" fill="#ffffff" opacity="0.08"/>
+</svg>
