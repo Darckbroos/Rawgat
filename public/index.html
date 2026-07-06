@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<div class="topbar">Envío gratis en Chile por compras sobre $60.000 · Devoluciones dentro de 30 días</div>
+<div class="topbar" id="topbar">Envío gratis en Chile por compras sobre $60.000 · Devoluciones dentro de 30 días</div>
 
 <header class="header" id="header">
   <div class="container header__inner">
@@ -139,66 +139,8 @@
         <p class="eyebrow">Colección</p>
         <h2>Equípate de la pared al boulder</h2>
       </div>
-      <div class="collection__grid">
-
-        <article class="product-card" data-tilt>
-          <div class="product-card__media product-card__media--1">
-            <span class="tag">Más vendido</span>
-            <svg class="product-card__icon" viewBox="0 0 64 64"><path d="M22 8h20l3 10-7 3v35h-6V27l-4-2-4 2v29h-6V21l-7-3 3-10Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="product-card__body">
-            <h3>Pantalón Gastón</h3>
-            <p>Elastano 4 vías, corte cónico, refuerzo en rodilla.</p>
-            <div class="product-card__row">
-              <span class="price">$42.990</span>
-              <a href="#contacto" class="btn btn--sm btn--outline">Ver producto</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="product-card" data-tilt>
-          <div class="product-card__media product-card__media--2">
-            <span class="tag">Nuevo</span>
-            <svg class="product-card__icon" viewBox="0 0 64 64"><path d="M20 14 12 20v8h6v26h28V28h6v-8l-8-6h-6a6 6 0 0 1-12 0Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="product-card__body">
-            <h3>Polerón Muro</h3>
-            <p>Softshell liviano, capucha compatible con casco.</p>
-            <div class="product-card__row">
-              <span class="price">$54.990</span>
-              <a href="#contacto" class="btn btn--sm btn--outline">Ver producto</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="product-card" data-tilt>
-          <div class="product-card__media product-card__media--3">
-            <svg class="product-card__icon" viewBox="0 0 64 64"><path d="M22 10h20l6 8-8 6v30H24V24l-8-6 6-8Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="product-card__body">
-            <h3>Camiseta Roca Seca</h3>
-            <p>Tejido técnico anti-olor, secado ultra rápido.</p>
-            <div class="product-card__row">
-              <span class="price">$21.990</span>
-              <a href="#contacto" class="btn btn--sm btn--outline">Ver producto</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="product-card" data-tilt>
-          <div class="product-card__media product-card__media--4">
-            <svg class="product-card__icon" viewBox="0 0 64 64"><path d="M32 12c8 0 14 6 14 14 0 10-6 16-14 24-8-8-14-14-14-24 0-8 6-14 14-14Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M25 24h14" stroke="currentColor" stroke-width="2.5"/></svg>
-          </div>
-          <div class="product-card__body">
-            <h3>Chalk Bag Cóndor</h3>
-            <p>Cierre de cordón, cepillo integrado, correa ajustable.</p>
-            <div class="product-card__row">
-              <span class="price">$17.990</span>
-              <a href="#contacto" class="btn btn--sm btn--outline">Ver producto</a>
-            </div>
-          </div>
-        </article>
-
+      <div class="collection__grid" id="collectionGrid" data-tilt-root>
+        <p class="collection__loading">Cargando colección…</p>
       </div>
       <div class="collection__cta">
         <a href="#contacto" class="btn btn--primary">Ver toda la colección</a>

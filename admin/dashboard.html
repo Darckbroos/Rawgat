@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>RAWGAT — Panel interno</title>
+<link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__brand">
+      <img src="/assets/img/logo.svg" alt="RAWGAT">
+      <span>RAWGAT<br><small>Panel interno</small></span>
+    </div>
+    <nav class="admin-nav">
+      <button class="admin-nav__link is-active" data-section="resumen">Resumen</button>
+      <button class="admin-nav__link" data-section="productos">Productos</button>
+      <button class="admin-nav__link" data-section="descuentos">Descuentos</button>
+    </nav>
+    <div class="admin-sidebar__footer">
+      <span id="adminUsername">admin</span>
+      <button id="logoutBtn" class="btn btn--ghost btn--sm">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+
+    <!-- RESUMEN -->
+    <section class="admin-section is-active" id="section-resumen">
+      <header class="admin-section__head">
+        <h1>Resumen</h1>
+        <p>Visitas y compras del sitio en los últimos 30 días.</p>
+      </header>
+
+      <div class="stat-cards">
+        <article class="stat-card">
+          <span class="stat-card__label">Visitas (30 días)</span>
+          <strong id="statVisits30">—</strong>
+          <span class="stat-card__sub" id="statVisits7">— últimos 7 días</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-card__label">Compras (30 días)</span>
+          <strong id="statPurchases30">—</strong>
+          <span class="stat-card__sub" id="statPurchases7">— últimos 7 días</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-card__label">Ingresos estimados (30 días)</span>
+          <strong id="statRevenue30">—</strong>
+          <span class="stat-card__sub">datos de compra simulados</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-card__label">Tasa de conversión</span>
+          <strong id="statConversion">—</strong>
+          <span class="stat-card__sub">compras / visitas</span>
+        </article>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card__head">
+          <h2>Visitas vs. compras</h2>
+          <p class="chart-card__note">Las visitas son datos reales del sitio. Las compras son datos de ejemplo mientras no exista un checkout en línea.</p>
+        </div>
+        <canvas id="analyticsChart" height="110"></canvas>
+      </div>
+    </section>
+
+    <!-- PRODUCTOS -->
+    <section class="admin-section" id="section-productos">
+      <header class="admin-section__head">
+        <h1>Productos</h1>
+        <p>Estos productos son los que se muestran en la colección de la página principal.</p>
+      </header>
+
+      <button class="btn btn--primary btn--sm" id="newProductBtn">+ Nuevo producto</button>
+
+      <table class="admin-table" id="productsTable">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Etiqueta</th>
+            <th>Activo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- DESCUENTOS -->
+    <section class="admin-section" id="section-descuentos">
+      <header class="admin-section__head">
+        <h1>Descuentos</h1>
+        <p>El descuento activo se muestra automáticamente en la barra superior del sitio.</p>
+      </header>
+
+      <button class="btn btn--primary btn--sm" id="newDiscountBtn">+ Nuevo descuento</button>
+
+      <table class="admin-table" id="discountsTable">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>%</th>
+            <th>Vence</th>
+            <th>Activo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal genérico -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__backdrop" id="modalBackdrop"></div>
+  <form class="modal__card" id="modalForm">
+    <h3 id="modalTitle">Nuevo</h3>
+    <div class="modal__fields" id="modalFields"></div>
+    <div class="modal__actions">
+      <button type="button" class="btn btn--ghost btn--sm" id="modalCancel">Cancelar</button>
+      <button type="submit" class="btn btn--primary btn--sm">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="/admin/admin.js" data-page="dashboard"></script>
+</body>
+</html>

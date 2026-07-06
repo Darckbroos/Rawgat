@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>RAWGAT — Acceso administrador</title>
+<link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <img src="/assets/img/logo.svg" alt="RAWGAT" class="login-card__logo">
+    <h1>Panel interno</h1>
+    <p class="login-card__hint">Acceso exclusivo para administradores de RAWGAT.</p>
+
+    <form id="loginForm" class="login-form">
+      <label>
+        Usuario
+        <input type="text" name="username" autocomplete="username" required>
+      </label>
+      <label>
+        Contraseña
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="btn btn--primary">Entrar</button>
+      <p class="login-form__error" id="loginError" hidden></p>
+    </form>
+  </main>
+  <script src="/admin/admin.js" data-page="login"></script>
+</body>
+</html>

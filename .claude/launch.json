@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "static-site",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-l", "5173", "."],
-      "port": 5173
+      "name": "rawgat-server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "port": 4000
     }
   ]
 }

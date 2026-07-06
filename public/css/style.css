@@ -446,6 +446,7 @@ p { margin: 0 0 1em; color: var(--stone); }
 .price { font-weight: 800; font-size: 1.05rem; }
 
 .collection__cta { text-align: center; margin-top: 44px; }
+.collection__loading { grid-column: 1 / -1; text-align: center; color: var(--stone); }
 
 /* Story */
 .story { padding: 96px 0; }
