@@ -7,7 +7,7 @@ async function api(url, options = {}) {
     ...options
   });
   if (res.status === 401) {
-    window.location.href = '/admin/login.html';
+    window.location.href = '/admin/login';
     throw new Error('No autenticado');
   }
   if (!res.ok) {
@@ -66,7 +66,7 @@ if (page === 'dashboard') {
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api('/admin/api/logout', { method: 'POST' });
-    window.location.href = '/admin/login.html';
+    window.location.href = '/admin/login';
   });
 
   // ----- Session check + username -----

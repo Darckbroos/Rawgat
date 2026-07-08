@@ -40,7 +40,7 @@ function requireAuth(req, res, next) {
 
 function requireAuthPage(req, res, next) {
   if (req.session && req.session.isAdmin) return next();
-  return res.redirect('/admin/login.html');
+  return res.redirect('/admin/login');
 }
 
 module.exports = { isLockedOut, registerFailedAttempt, clearAttempts, verifyLogin, requireAuth, requireAuthPage, LOCKOUT_MS };
