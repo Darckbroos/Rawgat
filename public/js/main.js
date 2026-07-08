@@ -183,10 +183,20 @@ fetch('/api/products')
 fetch('/api/discounts/active')
   .then(res => res.json())
   .then(discount => {
-    if (!discount) return;
     const topbar = document.getElementById('topbar');
+    const heading = document.getElementById('newsletterHeading');
+
+    if (!discount) {
+      if (topbar) topbar.textContent = 'Envío gratis en Chile por compras sobre $60.000 · Devoluciones dentro de 30 días';
+      if (heading) heading.textContent = 'Súmate y entérate primero de nuestros descuentos';
+      return;
+    }
+
     if (topbar) {
       topbar.textContent = `Usa el código ${discount.code} y llévate ${discount.percent}% de descuento${discount.description ? ' — ' + discount.description : ''}`;
+    }
+    if (heading) {
+      heading.textContent = `${discount.percent}% de descuento con el código ${discount.code}`;
     }
   })
   .catch(() => {});

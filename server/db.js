@@ -136,9 +136,19 @@ function getDiscounts() {
   return data.discounts;
 }
 
+// Los campos <input type="date"> guardan solo "AAAA-MM-DD". Si lo comparamos
+// tal cual, JS lo interpreta como medianoche UTC de ese día y el descuento
+// quedaría vencido desde el primer minuto del día elegido. En vez de eso, lo
+// tratamos como válido hasta el final de ese día.
+function endOfDay(dateStr) {
+  const end = new Date(dateStr);
+  end.setUTCHours(23, 59, 59, 999);
+  return end.getTime();
+}
+
 function getActiveDiscount() {
   const now = Date.now();
-  return data.discounts.find(d => d.active && (!d.expiresAt || new Date(d.expiresAt).getTime() > now)) || null;
+  return data.discounts.find(d => d.active && (!d.expiresAt || endOfDay(d.expiresAt) >= now)) || null;
 }
 
 function addDiscount(input) {
