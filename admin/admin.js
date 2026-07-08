@@ -19,6 +19,7 @@ async function api(url, options = {}) {
 }
 
 const money = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
+const CATEGORIES = ['Pantalones', 'Poleras', 'Accesorios'];
 
 // ---------------- LOGIN PAGE ----------------
 if (page === 'login') {
@@ -140,17 +141,22 @@ if (page === 'dashboard') {
   const modalTitle = document.getElementById('modalTitle');
   let onSubmit = null;
 
-  function openModal(title, fields, initialValues, submitHandler) {
+  function openModal(title, fields, initialValues, submitHandler, onRender) {
     modalTitle.textContent = title;
     modalFields.innerHTML = '';
     fields.forEach(field => {
       const label = document.createElement('label');
+      label.dataset.field = field.name;
       const value = initialValues && initialValues[field.name] !== undefined ? initialValues[field.name] : '';
       if (field.type === 'checkbox') {
         label.className = 'checkbox-row';
         label.innerHTML = `<input type="checkbox" name="${field.name}" ${value ? 'checked' : ''}> ${field.label}`;
       } else if (field.type === 'select') {
-        label.innerHTML = `${field.label}<select name="${field.name}">${field.options.map(o => `<option value="${o}" ${o === value ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+        const opts = field.options.map(o => {
+          const optLabel = (field.optionLabels && field.optionLabels[o]) || o;
+          return `<option value="${o}" ${String(o) === String(value) ? 'selected' : ''}>${optLabel}</option>`;
+        }).join('');
+        label.innerHTML = `${field.label}<select name="${field.name}">${opts}</select>`;
       } else if (field.type === 'textarea') {
         label.innerHTML = `${field.label}<textarea name="${field.name}" rows="3">${value}</textarea>`;
       } else {
@@ -160,6 +166,7 @@ if (page === 'dashboard') {
     });
     onSubmit = submitHandler;
     modal.hidden = false;
+    if (onRender) onRender(modalFields, initialValues);
   }
 
   function closeModal() {
@@ -188,7 +195,7 @@ if (page === 'dashboard') {
     { name: 'name', label: 'Nombre', type: 'text', required: true },
     { name: 'description', label: 'Descripción', type: 'textarea' },
     { name: 'price', label: 'Precio (CLP)', type: 'number', required: true },
-    { name: 'category', label: 'Categoría', type: 'select', options: ['Pantalones', 'Poleras', 'Accesorios'] },
+    { name: 'category', label: 'Categoría', type: 'select', options: CATEGORIES },
     { name: 'tag', label: 'Etiqueta (ej. Nuevo, Más vendido)', type: 'text' },
     { name: 'active', label: 'Producto activo (visible en la tienda)', type: 'checkbox' }
   ];
@@ -238,21 +245,60 @@ if (page === 'dashboard') {
   loadProducts();
 
   // ----- Discounts -----
+  const DISCOUNT_SCOPE_LABELS = { all: 'Todo el sitio', category: 'Una categoría', product: 'Un producto específico' };
   const DISCOUNT_FIELDS = [
     { name: 'code', label: 'Código', type: 'text', required: true },
     { name: 'description', label: 'Descripción', type: 'text' },
     { name: 'percent', label: 'Porcentaje de descuento', type: 'number', required: true },
+    { name: 'scope', label: 'Aplica a', type: 'select', options: ['all', 'category', 'product'], optionLabels: DISCOUNT_SCOPE_LABELS },
+    { name: 'scopeValue', label: 'Categoría o producto', type: 'select', options: [] },
     { name: 'expiresAt', label: 'Vence (opcional)', type: 'date' },
     { name: 'active', label: 'Descuento activo', type: 'checkbox' }
   ];
 
+  // Muestra/oculta y repuebla el select "Categoría o producto" según lo que
+  // se elija en "Aplica a". Se vuelve a llamar cada vez que cambia el scope.
+  function wireDiscountScopeField(fields, initialValues, products) {
+    const scopeSelect = fields.querySelector('[name=scope]');
+    const scopeValueSelect = fields.querySelector('[name=scopeValue]');
+    const scopeValueLabel = scopeValueSelect.closest('label');
+    let preselect = initialValues ? initialValues.scopeValue : '';
+
+    function refresh() {
+      const scope = scopeSelect.value;
+      let options = [];
+      if (scope === 'category') options = CATEGORIES.map(c => ({ value: c, label: c }));
+      if (scope === 'product') options = products.map(p => ({ value: String(p.id), label: p.name }));
+      scopeValueSelect.innerHTML = options
+        .map(o => `<option value="${o.value}" ${String(o.value) === String(preselect) ? 'selected' : ''}>${o.label}</option>`)
+        .join('');
+      scopeValueLabel.style.display = scope === 'all' ? 'none' : '';
+    }
+
+    scopeSelect.addEventListener('change', () => { preselect = null; refresh(); });
+    refresh();
+  }
+
+  function discountScopeLabel(d, productById) {
+    const scope = d.scope || 'all';
+    if (scope === 'all') return 'Todo el sitio';
+    if (scope === 'category') return `Categoría: ${d.scopeValue || '—'}`;
+    if (scope === 'product') return `Producto: ${productById[d.scopeValue] || d.scopeValue || '—'}`;
+    return '—';
+  }
+
   async function loadDiscounts() {
-    const discounts = await api('/admin/api/discounts');
+    const [discounts, products] = await Promise.all([
+      api('/admin/api/discounts'),
+      api('/admin/api/products')
+    ]);
+    const productById = Object.fromEntries(products.map(p => [String(p.id), p.name]));
+
     const tbody = document.querySelector('#discountsTable tbody');
     tbody.innerHTML = discounts.map(d => `
       <tr data-id="${d.id}">
         <td>${d.code}</td>
-        <td>${d.description || '—'}</td>
+        <td>${discountScopeLabel(d, productById)}</td>
         <td>${d.percent}%</td>
         <td>${d.expiresAt ? new Date(d.expiresAt).toLocaleDateString('es-CL') : '—'}</td>
         <td><span class="badge ${d.active ? 'badge--on' : 'badge--off'}">${d.active ? 'Activo' : 'Inactivo'}</span></td>
@@ -266,10 +312,10 @@ if (page === 'dashboard') {
     tbody.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const discount = discounts.find(d => d.id === Number(btn.dataset.edit));
-        openModal('Editar descuento', DISCOUNT_FIELDS, discount, async (values) => {
+        openModal('Editar descuento', DISCOUNT_FIELDS, { ...discount, scope: discount.scope || 'all' }, async (values) => {
           await api(`/admin/api/discounts/${discount.id}`, { method: 'PUT', body: JSON.stringify(values) });
           loadDiscounts();
-        });
+        }, (fields, initialValues) => wireDiscountScopeField(fields, initialValues, products));
       });
     });
     tbody.querySelectorAll('[data-delete]').forEach(btn => {
@@ -279,14 +325,14 @@ if (page === 'dashboard') {
         loadDiscounts();
       });
     });
-  }
 
-  document.getElementById('newDiscountBtn').addEventListener('click', () => {
-    openModal('Nuevo descuento', DISCOUNT_FIELDS, { active: true }, async (values) => {
-      await api('/admin/api/discounts', { method: 'POST', body: JSON.stringify(values) });
-      loadDiscounts();
-    });
-  });
+    document.getElementById('newDiscountBtn').onclick = () => {
+      openModal('Nuevo descuento', DISCOUNT_FIELDS, { active: true, scope: 'all' }, async (values) => {
+        await api('/admin/api/discounts', { method: 'POST', body: JSON.stringify(values) });
+        loadDiscounts();
+      }, (fields, initialValues) => wireDiscountScopeField(fields, initialValues, products));
+    };
+  }
 
   loadDiscounts();
 }

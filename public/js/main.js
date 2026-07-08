@@ -131,6 +131,15 @@ counters.forEach(el => counterObserver.observe(el));
 
 // ---------------- Dynamic content from the admin API ----------------
 
+// El nombre/descripción/código vienen del panel admin y se insertan con
+// innerHTML (para poder combinarlos con markup como <strong>/<span>), así
+// que se escapan primero para que nunca se interpreten como HTML/script.
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value ?? '';
+  return div.innerHTML;
+}
+
 const PRODUCT_ICONS = {
   pants: '<path d="M22 8h20l3 10-7 3v35h-6V27l-4-2-4 2v29h-6V21l-7-3 3-10Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>',
   hoodie: '<path d="M20 14 12 20v8h6v26h28V28h6v-8l-8-6h-6a6 6 0 0 1-12 0Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>',
@@ -139,6 +148,34 @@ const PRODUCT_ICONS = {
 };
 const MEDIA_CLASSES = ['product-card__media--1', 'product-card__media--2', 'product-card__media--3', 'product-card__media--4'];
 const money = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
+
+// El descuento guarda solo "AAAA-MM-DD"; lo tratamos como vigente hasta el
+// final de ese día (mismo criterio que usa el servidor) y devolvemos un
+// texto corto tipo "Quedan 2 días" / "Último día" / "" si ya no queda tiempo.
+function formatRemaining(expiresAt) {
+  if (!expiresAt) return '';
+  const end = new Date(expiresAt);
+  end.setUTCHours(23, 59, 59, 999);
+  const diffMs = end.getTime() - Date.now();
+  if (diffMs <= 0) return '';
+
+  const days = Math.floor(diffMs / 86400000);
+  if (days >= 1) return `Quedan ${days} día${days === 1 ? '' : 's'}`;
+
+  const hours = Math.floor(diffMs / 3600000);
+  if (hours >= 1) return `Quedan ${hours} hora${hours === 1 ? '' : 's'}`;
+
+  const minutes = Math.max(1, Math.floor(diffMs / 60000));
+  return `Quedan ${minutes} minuto${minutes === 1 ? '' : 's'}`;
+}
+
+function updateCountdowns() {
+  document.querySelectorAll('.countdown[data-expires]').forEach(el => {
+    const remaining = formatRemaining(el.dataset.expires);
+    el.textContent = remaining ? `· ${remaining}` : '';
+  });
+}
+setInterval(updateCountdowns, 60000);
 
 function renderProducts(products) {
   const grid = document.getElementById('collectionGrid');
@@ -149,27 +186,37 @@ function renderProducts(products) {
     return;
   }
 
-  grid.innerHTML = products.map((p, i) => `
+  grid.innerHTML = products.map((p, i) => {
+    const discount = p.discount;
+    const priceHtml = discount
+      ? `<span class="price__original">${money(p.price)}</span> ${money(p.finalPrice)}`
+      : money(p.price);
+
+    return `
     <article class="product-card" data-tilt>
       <div class="product-card__media ${MEDIA_CLASSES[i % MEDIA_CLASSES.length]}">
-        ${p.tag ? `<span class="tag">${p.tag}</span>` : ''}
+        ${p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : ''}
+        ${discount ? `<span class="tag tag--discount">-${Number(discount.percent) || 0}%</span>` : ''}
         <svg class="product-card__icon" viewBox="0 0 64 64">${PRODUCT_ICONS[p.icon] || PRODUCT_ICONS.shirt}</svg>
       </div>
       <div class="product-card__body">
-        <h3>${p.name}</h3>
-        <p>${p.description || ''}</p>
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${escapeHtml(p.description || '')}</p>
         <div class="product-card__row">
-          <span class="price">${money(p.price)}</span>
+          <span class="price">${priceHtml}</span>
           <a href="#contacto" class="btn btn--sm btn--outline">Ver producto</a>
         </div>
+        ${discount ? `<p class="product-card__countdown">Código ${escapeHtml(discount.code)} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span></p>` : ''}
       </div>
     </article>
-  `).join('');
+  `;
+  }).join('');
 
   grid.querySelectorAll('.product-card').forEach(card => {
     attachTilt(card);
     attachReveal(card);
   });
+  updateCountdowns();
 }
 
 fetch('/api/products')
@@ -192,12 +239,16 @@ fetch('/api/discounts/active')
       return;
     }
 
+    const percent = Number(discount.percent) || 0;
+    const code = escapeHtml(discount.code);
+    const countdownSpan = `<span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span>`;
     if (topbar) {
-      topbar.textContent = `Usa el código ${discount.code} y llévate ${discount.percent}% de descuento${discount.description ? ' — ' + discount.description : ''}`;
+      topbar.innerHTML = `Usa el código <strong>${code}</strong> y llévate ${percent}% de descuento ${countdownSpan}`;
     }
     if (heading) {
-      heading.textContent = `${discount.percent}% de descuento con el código ${discount.code}`;
+      heading.innerHTML = `${percent}% de descuento con el código ${code} ${countdownSpan}`;
     }
+    updateCountdowns();
   })
   .catch(() => {});
 

@@ -27,9 +27,23 @@ router.delete('/admin/api/products/:id', requireAuth, (req, res) => {
   res.status(204).end();
 });
 
-// Public read-only
+// Public read-only: incluye el descuento vigente (todo el sitio, categoría o
+// producto específico) y el precio final ya calculado para cada producto.
 router.get('/api/products', (req, res) => {
-  res.json(db.getProducts({ onlyActive: true }));
+  const products = db.getProducts({ onlyActive: true }).map(p => {
+    const discount = db.getEffectiveDiscountForProduct(p);
+    return {
+      ...p,
+      discount: discount ? {
+        code: discount.code,
+        percent: discount.percent,
+        expiresAt: discount.expiresAt,
+        scope: discount.scope || 'all'
+      } : null,
+      finalPrice: discount ? Math.round(p.price * (1 - discount.percent / 100)) : p.price
+    };
+  });
+  res.json(products);
 });
 
 module.exports = router;

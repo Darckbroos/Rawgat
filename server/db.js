@@ -48,7 +48,7 @@ function buildDefaultData() {
       { id: 4, name: 'Chalk Bag Cóndor', description: 'Cierre de cordón, cepillo integrado, correa ajustable.', price: 17990, category: 'Accesorios', tag: '', icon: 'chalkbag', active: true, createdAt: new Date().toISOString() }
     ],
     discounts: [
-      { id: 1, code: 'PRIMERAVEZ10', description: '10% de descuento en tu primera compra', percent: 10, active: true, expiresAt: null, createdAt: new Date().toISOString() }
+      { id: 1, code: 'PRIMERAVEZ10', description: '10% de descuento en tu primera compra', percent: 10, active: true, expiresAt: null, scope: 'all', scopeValue: null, createdAt: new Date().toISOString() }
     ],
     visits: [],
     purchases: seedDemoPurchases(),
@@ -146,12 +146,53 @@ function endOfDay(dateStr) {
   return end.getTime();
 }
 
+function isLive(d, now = Date.now()) {
+  if (!d.active) return false;
+  if (!d.expiresAt) return true;
+  return endOfDay(d.expiresAt) >= now;
+}
+
+const DISCOUNT_SCOPES = ['all', 'category', 'product'];
+function normalizeScope(scope) {
+  return DISCOUNT_SCOPES.includes(scope) ? scope : 'all';
+}
+
+// Solo puede haber un descuento "todo el sitio" activo a la vez: si se activa
+// uno nuevo, los demás de ese mismo alcance se desactivan automáticamente.
+// Los descuentos por categoría/producto no compiten entre sí de esta forma.
+function deactivateOtherSitewide(exceptId) {
+  data.discounts.forEach(d => {
+    if (d.id !== exceptId && (d.scope || 'all') === 'all' && d.active) {
+      d.active = false;
+    }
+  });
+}
+
+// Descuento "todo el sitio" vigente, el que se anuncia en la barra superior.
 function getActiveDiscount() {
   const now = Date.now();
-  return data.discounts.find(d => d.active && (!d.expiresAt || endOfDay(d.expiresAt) >= now)) || null;
+  return data.discounts.find(d => (d.scope || 'all') === 'all' && isLive(d, now)) || null;
+}
+
+// Mejor descuento vigente aplicable a un producto puntual: considera los
+// descuentos de todo el sitio, los de su categoría y los del producto en sí,
+// y se queda con el porcentaje más alto (el más beneficioso para el cliente).
+function getEffectiveDiscountForProduct(product) {
+  const now = Date.now();
+  const candidates = data.discounts.filter(d => {
+    if (!isLive(d, now)) return false;
+    const scope = d.scope || 'all';
+    if (scope === 'all') return true;
+    if (scope === 'category') return d.scopeValue === product.category;
+    if (scope === 'product') return Number(d.scopeValue) === product.id;
+    return false;
+  });
+  if (!candidates.length) return null;
+  return candidates.reduce((best, d) => (d.percent > best.percent ? d : best));
 }
 
 function addDiscount(input) {
+  const scope = normalizeScope(input.scope);
   const discount = {
     id: data._seq.discount++,
     code: (input.code || '').toUpperCase(),
@@ -159,9 +200,12 @@ function addDiscount(input) {
     percent: Number(input.percent) || 0,
     active: input.active !== false,
     expiresAt: input.expiresAt || null,
+    scope,
+    scopeValue: scope === 'all' ? null : (input.scopeValue || null),
     createdAt: new Date().toISOString()
   };
   data.discounts.push(discount);
+  if (scope === 'all' && discount.active) deactivateOtherSitewide(discount.id);
   save();
   return discount;
 }
@@ -169,13 +213,17 @@ function addDiscount(input) {
 function updateDiscount(id, input) {
   const discount = data.discounts.find(d => d.id === Number(id));
   if (!discount) return null;
+  const scope = input.scope !== undefined ? normalizeScope(input.scope) : (discount.scope || 'all');
   Object.assign(discount, {
     code: input.code ? input.code.toUpperCase() : discount.code,
     description: input.description ?? discount.description,
     percent: input.percent !== undefined ? Number(input.percent) : discount.percent,
     active: input.active !== undefined ? !!input.active : discount.active,
-    expiresAt: input.expiresAt !== undefined ? input.expiresAt : discount.expiresAt
+    expiresAt: input.expiresAt !== undefined ? input.expiresAt : discount.expiresAt,
+    scope,
+    scopeValue: scope === 'all' ? null : (input.scopeValue !== undefined ? input.scopeValue : discount.scopeValue)
   });
+  if (scope === 'all' && discount.active) deactivateOtherSitewide(discount.id);
   save();
   return discount;
 }
@@ -254,6 +302,6 @@ function getSummary() {
 module.exports = {
   getAdmin,
   getProducts, addProduct, updateProduct, deleteProduct,
-  getDiscounts, getActiveDiscount, addDiscount, updateDiscount, deleteDiscount,
+  getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,
   recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getSummary
 };
