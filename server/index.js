@@ -9,6 +9,7 @@ const sessionRoutes = require('./routes/session');
 const productRoutes = require('./routes/products');
 const discountRoutes = require('./routes/discounts');
 const analyticsRoutes = require('./routes/analytics');
+const checkoutRoutes = require('./routes/checkout');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,11 +27,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-      styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+      scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://www.paypal.com', 'https://www.sandbox.paypal.com'],
+      styleSrc: ["'self'", 'https://fonts.googleapis.com', "'unsafe-inline'"],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https://www.paypalobjects.com'],
+      connectSrc: ["'self'", 'https://www.paypal.com', 'https://www.sandbox.paypal.com'],
+      frameSrc: ["'self'", 'https://www.paypal.com', 'https://www.sandbox.paypal.com'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       frameAncestors: ["'self'"],
@@ -63,6 +65,7 @@ app.use(sessionRoutes);
 app.use(productRoutes);
 app.use(discountRoutes);
 app.use(analyticsRoutes);
+app.use(checkoutRoutes);
 
 // Admin panel: login page is public, dashboard requires a valid session.
 // Clean URLs (no ".html") so the admin surface doesn't look like a bare static page.

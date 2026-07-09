@@ -31,6 +31,10 @@
 
     <div class="header__actions">
       <a href="#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
+      <button class="cart-btn" id="cartBtn" aria-label="Ver carrito">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
+        <span class="cart-btn__count" id="cartCount" hidden>0</span>
+      </button>
       <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -253,6 +257,25 @@
     <span>Hecho en Chile para escaladores de todo el mundo.</span>
   </div>
 </footer>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Tu carrito</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Cerrar carrito">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="cartBody">
+    <p class="cart-drawer__empty">Tu carrito está vacío.</p>
+  </div>
+  <div class="cart-drawer__footer" id="cartFooter" hidden>
+    <div class="cart-drawer__total">
+      <span>Total</span>
+      <strong id="cartTotal">$0</strong>
+    </div>
+    <div id="paypalButtons"></div>
+    <p class="cart-drawer__demo-note">Pago de prueba (PayPal Sandbox) — no se realizan cobros reales. PayPal no admite CLP, así que el cobro se muestra en USD (conversión aproximada).</p>
+  </div>
+</aside>
 
 <script src="js/main.js"></script>
 </body>

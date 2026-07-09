@@ -204,7 +204,7 @@ function renderProducts(products) {
         <p>${escapeHtml(p.description || '')}</p>
         <div class="product-card__row">
           <span class="price">${priceHtml}</span>
-          <a href="#contacto" class="btn btn--sm btn--outline">Ver producto</a>
+          <button type="button" class="btn btn--sm btn--primary" data-add-to-cart="${p.id}">Agregar</button>
         </div>
         ${discount ? `<p class="product-card__countdown">Código ${escapeHtml(discount.code)} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span></p>` : ''}
       </div>
@@ -219,9 +219,15 @@ function renderProducts(products) {
   updateCountdowns();
 }
 
+let PRODUCTS = [];
+
 fetch('/api/products')
   .then(res => res.json())
-  .then(renderProducts)
+  .then(products => {
+    PRODUCTS = products;
+    renderProducts(products);
+    renderCart();
+  })
   .catch(() => {
     const grid = document.getElementById('collectionGrid');
     if (grid) grid.innerHTML = '<p class="collection__loading">No se pudo cargar la colección. Intenta de nuevo más tarde.</p>';
@@ -257,3 +263,213 @@ fetch('/api/track-visit', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ path: window.location.pathname })
 }).catch(() => {});
+
+// ---------------- Shopping cart (localStorage, sin página aparte) ----------------
+
+const CART_KEY = 'rawgat_cart';
+
+function loadCart() {
+  try {
+    return JSON.parse(localStorage.getItem(CART_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCart() {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
+
+let cart = loadCart();
+
+const cartBtn = document.getElementById('cartBtn');
+const cartCount = document.getElementById('cartCount');
+const cartOverlay = document.getElementById('cartOverlay');
+const cartDrawer = document.getElementById('cartDrawer');
+const cartClose = document.getElementById('cartClose');
+const cartBody = document.getElementById('cartBody');
+const cartFooter = document.getElementById('cartFooter');
+const cartTotalEl = document.getElementById('cartTotal');
+
+function cartItemCount() {
+  return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+}
+
+function updateCartBadge() {
+  const count = cartItemCount();
+  cartCount.textContent = count;
+  cartCount.hidden = count === 0;
+}
+
+function findProduct(id) {
+  return PRODUCTS.find(p => p.id === Number(id));
+}
+
+function unitPrice(product) {
+  return product.discount ? product.finalPrice : product.price;
+}
+
+function renderCart() {
+  const ids = Object.keys(cart).filter(id => cart[id] > 0);
+
+  if (!ids.length) {
+    cartBody.innerHTML = '<p class="cart-drawer__empty">Tu carrito está vacío.</p>';
+    cartFooter.hidden = true;
+    updateCartBadge();
+    return;
+  }
+
+  let total = 0;
+  cartBody.innerHTML = ids.map(id => {
+    const product = findProduct(id);
+    if (!product) return '';
+    const qty = cart[id];
+    const price = unitPrice(product);
+    total += price * qty;
+    return `
+      <div class="cart-item" data-id="${product.id}">
+        <div class="cart-item__info">
+          <strong>${escapeHtml(product.name)}</strong>
+          <span>${money(price)} c/u</span>
+        </div>
+        <div class="cart-item__qty">
+          <button type="button" data-qty-down="${product.id}" aria-label="Restar unidad">−</button>
+          <span>${qty}</span>
+          <button type="button" data-qty-up="${product.id}" aria-label="Sumar unidad">+</button>
+        </div>
+        <button type="button" class="cart-item__remove" data-remove="${product.id}" aria-label="Quitar producto">&times;</button>
+      </div>
+    `;
+  }).join('');
+
+  cartTotalEl.textContent = money(total);
+  cartFooter.hidden = false;
+  updateCartBadge();
+  scheduleRenderPaypalButtons(total, ids);
+}
+
+function addToCart(id) {
+  const key = String(id);
+  cart[key] = (cart[key] || 0) + 1;
+  saveCart();
+  renderCart();
+  openCart();
+}
+
+function changeQty(id, delta) {
+  const key = String(id);
+  const next = (cart[key] || 0) + delta;
+  if (next <= 0) delete cart[key];
+  else cart[key] = next;
+  saveCart();
+  renderCart();
+}
+
+function removeFromCart(id) {
+  delete cart[String(id)];
+  saveCart();
+  renderCart();
+}
+
+function openCart() {
+  cartDrawer.classList.add('is-open');
+  cartOverlay.classList.add('is-open');
+  cartDrawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeCart() {
+  cartDrawer.classList.remove('is-open');
+  cartOverlay.classList.remove('is-open');
+  cartDrawer.setAttribute('aria-hidden', 'true');
+}
+
+cartBtn.addEventListener('click', () => {
+  renderCart();
+  openCart();
+});
+cartClose.addEventListener('click', closeCart);
+cartOverlay.addEventListener('click', closeCart);
+
+cartBody.addEventListener('click', (e) => {
+  const upId = e.target.dataset.qtyUp;
+  const downId = e.target.dataset.qtyDown;
+  const removeId = e.target.dataset.remove;
+  if (upId) changeQty(upId, 1);
+  if (downId) changeQty(downId, -1);
+  if (removeId) removeFromCart(removeId);
+});
+
+document.addEventListener('click', (e) => {
+  const addBtn = e.target.closest('[data-add-to-cart]');
+  if (addBtn) addToCart(addBtn.dataset.addToCart);
+});
+
+updateCartBadge();
+
+// ---------------- PayPal checkout (sandbox/demo, sin cobros reales) ----------------
+
+let paypalConfig = null;
+let paypalSdkPromise = null;
+let paypalRenderTimeout = null;
+
+function loadPaypalSdk() {
+  if (paypalSdkPromise) return paypalSdkPromise;
+  paypalSdkPromise = fetch('/api/checkout/config')
+    .then(res => res.json())
+    .then(config => {
+      paypalConfig = config;
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.clientId)}&currency=${encodeURIComponent(config.currency)}&intent=capture`;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    });
+  return paypalSdkPromise;
+}
+
+function scheduleRenderPaypalButtons(total, ids) {
+  clearTimeout(paypalRenderTimeout);
+  paypalRenderTimeout = setTimeout(() => renderPaypalButtons(total, ids), 250);
+}
+
+function renderPaypalButtons(total, ids) {
+  const container = document.getElementById('paypalButtons');
+  if (!container || !total) return;
+
+  loadPaypalSdk().then(() => {
+    container.innerHTML = '';
+    window.paypal.Buttons({
+      style: { shape: 'pill', color: 'black', layout: 'vertical', label: 'paypal' },
+      createOrder: (data, actions) => {
+        // PayPal no admite CLP como moneda de checkout: convertimos a USD
+        // con un tipo de cambio fijo aproximado solo para esta demo.
+        const usdValue = (total / paypalConfig.clpPerUsd).toFixed(2);
+        return actions.order.create({
+          purchase_units: [{ amount: { currency_code: paypalConfig.currency, value: usdValue } }]
+        });
+      },
+      onApprove: (data, actions) => actions.order.capture()
+        .then(() => fetch('/api/checkout/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: ids.map(id => ({ id, qty: cart[id] })),
+            paypalOrderId: data.orderID
+          })
+        }))
+        .then(() => {
+          cart = {};
+          saveCart();
+          cartBody.innerHTML = '<p class="cart-drawer__empty">¡Gracias por tu compra! (pago de prueba, sin cobro real)</p>';
+          cartFooter.hidden = true;
+          updateCartBadge();
+        }),
+      onError: (err) => {
+        console.error('PayPal error', err);
+        alert('Ocurrió un error con el pago de prueba. Intenta de nuevo.');
+      }
+    }).render('#paypalButtons');
+  });
+}
