@@ -10,6 +10,7 @@ const productRoutes = require('./routes/products');
 const discountRoutes = require('./routes/discounts');
 const analyticsRoutes = require('./routes/analytics');
 const checkoutRoutes = require('./routes/checkout');
+const accountingRoutes = require('./routes/accounting');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -66,6 +67,7 @@ app.use(productRoutes);
 app.use(discountRoutes);
 app.use(analyticsRoutes);
 app.use(checkoutRoutes);
+app.use(accountingRoutes);
 
 // Admin panel: login page is public, dashboard requires a valid session.
 // Clean URLs (no ".html") so the admin surface doesn't look like a bare static page.

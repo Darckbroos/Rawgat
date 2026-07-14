@@ -20,6 +20,8 @@
     </div>
     <nav class="admin-nav">
       <button class="admin-nav__link is-active" data-section="resumen">Resumen</button>
+      <button class="admin-nav__link" data-section="contabilidad">Contabilidad</button>
+      <button class="admin-nav__link" data-section="sucursales">Sucursales</button>
       <button class="admin-nav__link" data-section="productos">Productos</button>
       <button class="admin-nav__link" data-section="descuentos">Descuentos</button>
     </nav>
@@ -68,6 +70,135 @@
         </div>
         <canvas id="analyticsChart" height="110"></canvas>
       </div>
+
+      <div class="chart-card">
+        <div class="chart-card__head chart-card__head--row">
+          <div>
+            <h2>Comparación de productos</h2>
+            <p class="chart-card__note">Qué prendas prefieren los clientes: útil para decidir qué producir más y a qué productos darle empuje en marketing.</p>
+          </div>
+          <select id="productDaysFilter">
+            <option value="30">Últimos 30 días</option>
+            <option value="90" selected>Últimos 90 días</option>
+            <option value="365">Último año</option>
+          </select>
+        </div>
+        <div class="product-charts-grid" id="productChartsGrid">
+          <div class="product-chart-box">
+            <canvas id="productBarChart"></canvas>
+          </div>
+          <div class="product-chart-box product-chart-box--pie">
+            <canvas id="productPieChart"></canvas>
+          </div>
+        </div>
+        <table class="admin-table" id="productPerfTable">
+          <thead>
+            <tr><th>Producto</th><th>Categoría</th><th>Unidades</th><th>Ingresos</th><th>% de ingresos</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CONTABILIDAD -->
+    <section class="admin-section" id="section-contabilidad">
+      <header class="admin-section__head">
+        <h1>Contabilidad</h1>
+        <p>Ingresos y gastos de todas las sucursales, incluida la tienda en línea.</p>
+      </header>
+
+      <div class="filters-row">
+        <label>
+          Sucursal
+          <select id="acctBranchFilter">
+            <option value="">Todas las sucursales</option>
+          </select>
+        </label>
+        <label>
+          Período
+          <select id="acctDaysFilter">
+            <option value="7">Últimos 7 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </label>
+        <button class="btn btn--primary btn--sm" id="newTransactionBtn">+ Nuevo movimiento</button>
+      </div>
+
+      <div class="stat-cards">
+        <article class="stat-card">
+          <span class="stat-card__label">Ingresos</span>
+          <strong id="acctIncome" class="stat-card--income">—</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-card__label">Gastos</span>
+          <strong id="acctExpenses" class="stat-card--expense">—</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-card__label">Resultado neto</span>
+          <strong id="acctNet">—</strong>
+        </article>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card__head">
+          <h2>Ingresos vs. gastos</h2>
+        </div>
+        <canvas id="acctChart" height="100"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card__head">
+          <h2>Por sucursal</h2>
+          <p class="chart-card__note">Comparación del período seleccionado.</p>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Sucursal</th><th>Ingresos</th><th>Gastos</th><th>Neto</th></tr></thead>
+          <tbody id="branchBreakdownBody"></tbody>
+        </table>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card__head">
+          <h2>Por categoría</h2>
+        </div>
+        <div class="category-breakdown" id="categoryBreakdownBody"></div>
+      </div>
+
+      <div class="admin-table-head">
+        <h2>Movimientos</h2>
+        <button class="btn btn--ghost btn--sm" id="exportTransactionsBtn">Exportar CSV</button>
+      </div>
+      <table class="admin-table" id="transactionsTable">
+        <thead>
+          <tr><th>Fecha</th><th>Sucursal</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>N° operación</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="pager">
+        <span class="pager__info" id="transactionsPagerInfo">—</span>
+        <div class="pager__nav">
+          <button type="button" class="btn btn--ghost btn--sm" id="transactionsPrevBtn">Anterior</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="transactionsNextBtn">Siguiente</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUCURSALES -->
+    <section class="admin-section" id="section-sucursales">
+      <header class="admin-section__head">
+        <h1>Sucursales</h1>
+        <p>Puntos de venta de RAWGAT. La sucursal "RAWGAT Online" agrupa las ventas del sitio y no puede eliminarse.</p>
+      </header>
+
+      <button class="btn btn--primary btn--sm" id="newBranchBtn">+ Nueva sucursal</button>
+
+      <table class="admin-table" id="branchesTable">
+        <thead>
+          <tr><th>Nombre</th><th>Dirección</th><th>Activa</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <!-- PRODUCTOS -->

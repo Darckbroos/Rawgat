@@ -24,4 +24,9 @@ router.get('/admin/api/analytics/series', requireAuth, (req, res) => {
   });
 });
 
+router.get('/admin/api/analytics/products', requireAuth, (req, res) => {
+  const days = Math.min(Math.max(Number(req.query.days) || 90, 7), 365);
+  res.json(db.getProductPerformance({ days }));
+});
+
 module.exports = router;

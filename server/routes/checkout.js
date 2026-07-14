@@ -32,18 +32,15 @@ router.post('/api/checkout/confirm', (req, res) => {
     const unitPrice = discount ? Math.round(product.price * (1 - discount.percent / 100)) : product.price;
     const amount = unitPrice * qty;
     total += amount;
-    lines.push({ productId: product.id, amount });
+    lines.push({ productId: product.id, amount, qty });
   });
 
   if (!lines.length) return res.status(400).json({ error: 'Ningún producto válido en el carrito' });
 
-  lines.forEach(line => db.recordPurchase(line.productId, line.amount));
+  const orderId = typeof req.body.paypalOrderId === 'string' ? req.body.paypalOrderId.slice(0, 64) : null;
+  lines.forEach(line => db.recordPurchase(line.productId, line.amount, { qty: line.qty, reference: orderId }));
 
-  res.json({
-    ok: true,
-    total,
-    orderId: typeof req.body.paypalOrderId === 'string' ? req.body.paypalOrderId.slice(0, 64) : null
-  });
+  res.json({ ok: true, total, orderId });
 });
 
 module.exports = router;

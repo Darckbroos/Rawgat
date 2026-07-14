@@ -490,7 +490,15 @@ p { margin: 0 0 1em; color: var(--stone); }
   box-shadow: 0 30px 60px rgba(18,24,29,0.25);
   will-change: transform;
 }
-.story__logo { position: relative; z-index: 1; width: 55%; opacity: .9; filter: invert(1) brightness(1.6); transform: translateZ(40px); }
+.story__photo {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 47%;
+  transform: translateZ(20px);
+}
 .story__content .btn, .link-arrow {
   display: inline-block;
   margin-top: 8px;

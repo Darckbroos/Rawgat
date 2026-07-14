@@ -8,21 +8,35 @@ function nextId(list) {
   return list.reduce((max, item) => Math.max(max, item.id), 0) + 1;
 }
 
+// Elige un producto con probabilidades distintas (no todos venden igual),
+// para que el comparador de productos tenga una señal de "gustos" real
+// que mostrar en vez de ruido uniforme.
+function weightedProductPick(weights) {
+  const roll = Math.random();
+  let acc = 0;
+  for (const [productId, weight] of weights) {
+    acc += weight;
+    if (roll <= acc) return productId;
+  }
+  return weights[weights.length - 1][0];
+}
+
 function seedDemoPurchases() {
   const purchases = [];
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
-  const productIds = [1, 2, 3, 4];
   const amounts = { 1: 42990, 2: 54990, 3: 21990, 4: 17990 };
+  const weights = [[1, 0.4], [2, 0.25], [3, 0.2], [4, 0.15]];
 
   for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
     const count = Math.floor(Math.random() * 6) + 1; // 1-6 compras demo por día
     for (let i = 0; i < count; i++) {
-      const productId = productIds[Math.floor(Math.random() * productIds.length)];
+      const productId = weightedProductPick(weights);
       const ts = now - daysAgo * dayMs - Math.floor(Math.random() * dayMs);
       purchases.push({
         id: purchases.length + 1,
         productId,
+        qty: 1,
         amount: amounts[productId],
         createdAt: new Date(ts).toISOString(),
         demo: true
@@ -32,9 +46,88 @@ function seedDemoPurchases() {
   return purchases;
 }
 
+// Movimientos contables de ejemplo: los ingresos online replican las compras
+// demo ya generadas, y las sucursales físicas reciben ventas diarias más
+// arriendo/sueldos mensuales y algunos gastos operativos sueltos, para que
+// el módulo de contabilidad no arranque vacío.
+function seedDemoTransactions(purchases, branches) {
+  const transactions = [];
+  let id = 1;
+  const push = (t) => transactions.push({ id: id++, demo: true, ...t });
+
+  const onlineBranch = branches.find(b => b.type === 'online');
+  purchases.forEach(p => push({
+    branchId: onlineBranch.id,
+    type: 'income',
+    category: 'Ventas online',
+    description: 'Venta en línea',
+    amount: p.amount,
+    method: 'tarjeta',
+    date: p.createdAt.slice(0, 10),
+    createdAt: p.createdAt
+  }));
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const physicalProfiles = [
+    { dailySale: [40000, 140000], rent: 850000, payroll: 620000 },
+    { dailySale: [25000, 95000], rent: 620000, payroll: 480000 }
+  ];
+
+  branches.filter(b => b.type === 'physical').forEach((branch, i) => {
+    const profile = physicalProfiles[i] || physicalProfiles[physicalProfiles.length - 1];
+    const [min, max] = profile.dailySale;
+
+    for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
+      const d = new Date(today.getTime() - daysAgo * dayMs);
+      const date = d.toISOString().slice(0, 10);
+
+      push({
+        branchId: branch.id,
+        type: 'income',
+        category: 'Ventas tienda',
+        description: 'Ventas del día',
+        amount: min + Math.floor(Math.random() * (max - min)),
+        method: 'efectivo',
+        date,
+        createdAt: d.toISOString()
+      });
+
+      if (Math.random() < 0.18) {
+        const category = ['Insumos y materiales', 'Servicios básicos', 'Marketing'][Math.floor(Math.random() * 3)];
+        push({
+          branchId: branch.id,
+          type: 'expense',
+          category,
+          description: category,
+          amount: 12000 + Math.floor(Math.random() * 55000),
+          method: 'transferencia',
+          date,
+          createdAt: d.toISOString()
+        });
+      }
+    }
+
+    const todayStr = today.toISOString().slice(0, 10);
+    push({ branchId: branch.id, type: 'expense', category: 'Arriendo', description: 'Arriendo del mes', amount: profile.rent, method: 'transferencia', date: todayStr, createdAt: today.toISOString() });
+    push({ branchId: branch.id, type: 'expense', category: 'Sueldos', description: 'Remuneraciones del mes', amount: profile.payroll, method: 'transferencia', date: todayStr, createdAt: today.toISOString() });
+  });
+
+  return transactions;
+}
+
 function buildDefaultData() {
   const adminUsername = process.env.ADMIN_USERNAME || 'admin';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin1234';
+  const purchases = seedDemoPurchases();
+  const branches = [
+    { id: 1, name: 'RAWGAT Online', address: 'Tienda en línea', type: 'online', active: true, createdAt: new Date().toISOString() },
+    { id: 2, name: 'RAWGAT Providencia', address: 'Av. Providencia 1234, Santiago', type: 'physical', active: true, createdAt: new Date().toISOString() },
+    { id: 3, name: 'RAWGAT Bellavista', address: 'Pío Nono 567, Santiago', type: 'physical', active: true, createdAt: new Date().toISOString() }
+  ];
+  const transactions = seedDemoTransactions(purchases, branches);
 
   return {
     admin: {
@@ -51,8 +144,13 @@ function buildDefaultData() {
       { id: 1, code: 'PRIMERAVEZ10', description: '10% de descuento en tu primera compra', percent: 10, active: true, expiresAt: null, scope: 'all', scopeValue: null, createdAt: new Date().toISOString() }
     ],
     visits: [],
-    purchases: seedDemoPurchases(),
-    _seq: { product: 5, discount: 2, visit: 1, purchase: seedDemoPurchases().length + 1 }
+    purchases,
+    branches,
+    transactions,
+    _seq: {
+      product: 5, discount: 2, visit: 1, purchase: purchases.length + 1,
+      branch: branches.length + 1, transaction: transactions.length + 1
+    }
   };
 }
 
@@ -71,8 +169,34 @@ function load() {
     }
   } else {
     data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+    migrateAccountingData();
   }
   return data;
+}
+
+// Añade sucursales/movimientos a bases de datos creadas antes de que
+// existiera el módulo de contabilidad, sin tocar el resto de los datos.
+function migrateAccountingData() {
+  let changed = false;
+  if (!data.branches) {
+    data.branches = [
+      { id: 1, name: 'RAWGAT Online', address: 'Tienda en línea', type: 'online', active: true, createdAt: new Date().toISOString() }
+    ];
+    changed = true;
+  }
+  if (!data.transactions) {
+    data.transactions = [];
+    changed = true;
+  }
+  if (!data._seq.branch) {
+    data._seq.branch = data.branches.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+    changed = true;
+  }
+  if (!data._seq.transaction) {
+    data._seq.transaction = data.transactions.reduce((max, t) => Math.max(max, t.id), 0) + 1;
+    changed = true;
+  }
+  if (changed) save();
 }
 
 function save() {
@@ -241,9 +365,27 @@ function recordVisit(pagePath) {
   save();
 }
 
-function recordPurchase(productId, amount) {
-  const purchase = { id: data._seq.purchase++, productId: productId || null, amount: Number(amount) || 0, createdAt: new Date().toISOString(), demo: false };
+function recordPurchase(productId, amount, { qty = 1, reference = null } = {}) {
+  const purchase = { id: data._seq.purchase++, productId: productId || null, qty: Number(qty) || 1, amount: Number(amount) || 0, createdAt: new Date().toISOString(), demo: false };
   data.purchases.push(purchase);
+
+  const onlineBranch = data.branches.find(b => b.type === 'online');
+  if (onlineBranch) {
+    data.transactions.push({
+      id: data._seq.transaction++,
+      branchId: onlineBranch.id,
+      type: 'income',
+      category: 'Ventas online',
+      description: 'Venta en línea (checkout)',
+      amount: purchase.amount,
+      method: 'paypal',
+      reference: reference || '',
+      date: purchase.createdAt.slice(0, 10),
+      createdAt: purchase.createdAt,
+      demo: false
+    });
+  }
+
   save();
   return purchase;
 }
@@ -273,6 +415,40 @@ function getPurchasesSeries(days = 30) {
   return dailySeries(data.purchases, days);
 }
 
+// Compara ventas entre productos: unidades, ingresos y % del total, para
+// detectar qué se vende más (producción) y qué promocionar (marketing).
+function getProductPerformance({ days = 90 } = {}) {
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  const inRange = data.purchases.filter(p => new Date(p.createdAt).getTime() >= since);
+  const totalRevenue = inRange.reduce((sum, p) => sum + p.amount, 0);
+
+  const byProduct = {};
+  inRange.forEach(p => {
+    const key = p.productId || 'unknown';
+    if (!byProduct[key]) byProduct[key] = { unitsSold: 0, revenue: 0, orders: 0 };
+    byProduct[key].unitsSold += p.qty || 1;
+    byProduct[key].revenue += p.amount;
+    byProduct[key].orders += 1;
+  });
+
+  return Object.entries(byProduct)
+    .map(([productId, stats]) => {
+      const product = data.products.find(p => p.id === Number(productId));
+      return {
+        productId: product ? product.id : null,
+        name: product ? product.name : 'Producto eliminado',
+        category: product ? product.category : '—',
+        icon: product ? product.icon : 'shirt',
+        active: product ? product.active : false,
+        unitsSold: stats.unitsSold,
+        revenue: stats.revenue,
+        orders: stats.orders,
+        revenueShare: totalRevenue > 0 ? Math.round((stats.revenue / totalRevenue) * 1000) / 10 : 0
+      };
+    })
+    .sort((a, b) => b.unitsSold - a.unitsSold);
+}
+
 function getSummary() {
   const dayMs = 24 * 60 * 60 * 1000;
   const now = Date.now();
@@ -299,9 +475,169 @@ function getSummary() {
   };
 }
 
+// ---------- Branches ----------
+function getBranches() {
+  return data.branches;
+}
+
+function addBranch(input) {
+  const branch = {
+    id: data._seq.branch++,
+    name: input.name,
+    address: input.address || '',
+    type: 'physical',
+    active: input.active !== false,
+    createdAt: new Date().toISOString()
+  };
+  data.branches.push(branch);
+  save();
+  return branch;
+}
+
+function updateBranch(id, input) {
+  const branch = data.branches.find(b => b.id === Number(id));
+  if (!branch) return null;
+  Object.assign(branch, {
+    name: input.name ?? branch.name,
+    address: input.address ?? branch.address,
+    active: input.active !== undefined ? !!input.active : branch.active
+  });
+  save();
+  return branch;
+}
+
+function deleteBranch(id) {
+  const branch = data.branches.find(b => b.id === Number(id));
+  if (!branch) return { ok: false };
+  if (branch.type === 'online') return { error: 'La sucursal en línea no se puede eliminar' };
+  if (data.transactions.some(t => t.branchId === branch.id)) {
+    return { error: 'Esta sucursal tiene movimientos contables asociados' };
+  }
+  data.branches = data.branches.filter(b => b.id !== branch.id);
+  save();
+  return { ok: true };
+}
+
+// ---------- Accounting ----------
+const ACCOUNTING_CATEGORIES = {
+  income: ['Ventas tienda', 'Ventas online', 'Otros ingresos'],
+  expense: ['Arriendo', 'Sueldos', 'Insumos y materiales', 'Marketing', 'Logística y envíos', 'Servicios básicos', 'Otros gastos']
+};
+
+function getTransactions({ branchId, type, from, to, category } = {}) {
+  return data.transactions
+    .filter(t => !branchId || t.branchId === Number(branchId))
+    .filter(t => !type || t.type === type)
+    .filter(t => !category || t.category === category)
+    .filter(t => !from || t.date >= from)
+    .filter(t => !to || t.date <= to)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+}
+
+function addTransaction(input) {
+  const type = input.type === 'expense' ? 'expense' : 'income';
+  const defaultCategory = ACCOUNTING_CATEGORIES[type][ACCOUNTING_CATEGORIES[type].length - 1];
+  const transaction = {
+    id: data._seq.transaction++,
+    branchId: Number(input.branchId),
+    type,
+    category: ACCOUNTING_CATEGORIES[type].includes(input.category) ? input.category : defaultCategory,
+    description: input.description || '',
+    amount: Math.abs(Number(input.amount)) || 0,
+    method: input.method || 'transferencia',
+    reference: input.reference || '',
+    date: input.date || new Date().toISOString().slice(0, 10),
+    createdAt: new Date().toISOString(),
+    demo: false
+  };
+  data.transactions.push(transaction);
+  save();
+  return transaction;
+}
+
+function updateTransaction(id, input) {
+  const transaction = data.transactions.find(t => t.id === Number(id));
+  if (!transaction) return null;
+  const type = input.type === 'expense' || input.type === 'income' ? input.type : transaction.type;
+  Object.assign(transaction, {
+    branchId: input.branchId !== undefined ? Number(input.branchId) : transaction.branchId,
+    type,
+    category: input.category && ACCOUNTING_CATEGORIES[type].includes(input.category) ? input.category : transaction.category,
+    description: input.description ?? transaction.description,
+    amount: input.amount !== undefined ? (Math.abs(Number(input.amount)) || 0) : transaction.amount,
+    method: input.method ?? transaction.method,
+    reference: input.reference ?? transaction.reference,
+    date: input.date ?? transaction.date
+  });
+  save();
+  return transaction;
+}
+
+function deleteTransaction(id) {
+  const before = data.transactions.length;
+  data.transactions = data.transactions.filter(t => t.id !== Number(id));
+  save();
+  return data.transactions.length < before;
+}
+
+function accountingTotals(transactions) {
+  const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  return { income, expenses, net: income - expenses };
+}
+
+function getAccountingSummary({ branchId, days = 30 } = {}) {
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  const inRange = data.transactions.filter(t => {
+    if (branchId && t.branchId !== Number(branchId)) return false;
+    return new Date(t.date).getTime() >= since;
+  });
+
+  const byBranch = data.branches
+    .filter(b => !branchId || b.id === Number(branchId))
+    .map(b => ({ branchId: b.id, branchName: b.name, ...accountingTotals(inRange.filter(t => t.branchId === b.id)) }));
+
+  const categoryTotals = {};
+  inRange.forEach(t => {
+    const key = `${t.type}:${t.category}`;
+    categoryTotals[key] = (categoryTotals[key] || 0) + t.amount;
+  });
+  const byCategory = Object.entries(categoryTotals)
+    .map(([key, amount]) => {
+      const [type, category] = key.split(':');
+      return { type, category, amount };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  return { ...accountingTotals(inRange), byBranch, byCategory };
+}
+
+function getAccountingSeries({ branchId, days = 30 } = {}) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const buckets = [];
+  for (let i = days - 1; i >= 0; i--) {
+    buckets.push({ date: new Date(today.getTime() - i * dayMs).toISOString().slice(0, 10), income: 0, expenses: 0 });
+  }
+  data.transactions
+    .filter(t => !branchId || t.branchId === Number(branchId))
+    .forEach(t => {
+      const bucket = buckets.find(b => b.date === t.date);
+      if (!bucket) return;
+      if (t.type === 'income') bucket.income += t.amount;
+      else bucket.expenses += t.amount;
+    });
+  return buckets;
+}
+
 module.exports = {
   getAdmin,
   getProducts, addProduct, updateProduct, deleteProduct,
   getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,
-  recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getSummary
+  recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getProductPerformance, getSummary,
+  getBranches, addBranch, updateBranch, deleteBranch,
+  ACCOUNTING_CATEGORIES,
+  getTransactions, addTransaction, updateTransaction, deleteTransaction,
+  getAccountingSummary, getAccountingSeries
 };
