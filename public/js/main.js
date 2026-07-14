@@ -112,7 +112,7 @@ const animateCount = (el) => {
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     const value = Math.floor(target * eased);
-    el.textContent = `${prefix}${value.toLocaleString('es-CL')}${suffix}`;
+    el.textContent = `${prefix}${value.toLocaleString('es-ES')}${suffix}`;
     if (progress < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -147,7 +147,7 @@ const PRODUCT_ICONS = {
   chalkbag: '<path d="M32 12c8 0 14 6 14 14 0 10-6 16-14 24-8-8-14-14-14-24 0-8 6-14 14-14Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M25 24h14" stroke="currentColor" stroke-width="2.5"/>'
 };
 const MEDIA_CLASSES = ['product-card__media--1', 'product-card__media--2', 'product-card__media--3', 'product-card__media--4'];
-const money = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
+const money = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
 
 // El descuento guarda solo "AAAA-MM-DD"; lo tratamos como vigente hasta el
 // final de ese día (mismo criterio que usa el servidor) y devolvemos un
@@ -191,20 +191,23 @@ function renderProducts(products) {
     const priceHtml = discount
       ? `<span class="price__original">${money(p.price)}</span> ${money(p.finalPrice)}`
       : money(p.price);
+    const outOfStock = Number(p.stock) <= 0;
 
     return `
     <article class="product-card" data-tilt>
       <div class="product-card__media ${MEDIA_CLASSES[i % MEDIA_CLASSES.length]}">
-        ${p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : ''}
+        ${outOfStock ? `<span class="tag tag--stock">Agotado</span>` : (p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : '')}
         ${discount ? `<span class="tag tag--discount">-${Number(discount.percent) || 0}%</span>` : ''}
-        <svg class="product-card__icon" viewBox="0 0 64 64">${PRODUCT_ICONS[p.icon] || PRODUCT_ICONS.shirt}</svg>
+        ${p.image
+          ? `<img class="product-card__photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`
+          : `<svg class="product-card__icon" viewBox="0 0 64 64">${PRODUCT_ICONS[p.icon] || PRODUCT_ICONS.shirt}</svg>`}
       </div>
       <div class="product-card__body">
         <h3>${escapeHtml(p.name)}</h3>
         <p>${escapeHtml(p.description || '')}</p>
         <div class="product-card__row">
           <span class="price">${priceHtml}</span>
-          <button type="button" class="btn btn--sm btn--primary" data-add-to-cart="${p.id}">Agregar</button>
+          <button type="button" class="btn btn--sm btn--primary" data-add-to-cart="${p.id}" ${outOfStock ? 'disabled' : ''}>${outOfStock ? 'Agotado' : 'Agregar'}</button>
         </div>
         ${discount ? `<p class="product-card__countdown">Código ${escapeHtml(discount.code)} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span></p>` : ''}
       </div>
@@ -240,7 +243,7 @@ fetch('/api/discounts/active')
     const heading = document.getElementById('newsletterHeading');
 
     if (!discount) {
-      if (topbar) topbar.textContent = 'Envío gratis en Chile por compras sobre $60.000 · Devoluciones dentro de 30 días';
+      if (topbar) topbar.textContent = 'Envío gratis en Europa por compras sobre 60€ · Devoluciones dentro de 30 días';
       if (heading) heading.textContent = 'Súmate y entérate primero de nuestros descuentos';
       return;
     }
@@ -350,7 +353,14 @@ function renderCart() {
 
 function addToCart(id) {
   const key = String(id);
-  cart[key] = (cart[key] || 0) + 1;
+  const product = findProduct(id);
+  const maxStock = product ? Number(product.stock) || 0 : Infinity;
+  const next = (cart[key] || 0) + 1;
+  if (next > maxStock) {
+    alert('No queda más stock disponible de este producto.');
+    return;
+  }
+  cart[key] = next;
   saveCart();
   renderCart();
   openCart();
@@ -358,7 +368,13 @@ function addToCart(id) {
 
 function changeQty(id, delta) {
   const key = String(id);
+  const product = findProduct(id);
+  const maxStock = product ? Number(product.stock) || 0 : Infinity;
   const next = (cart[key] || 0) + delta;
+  if (delta > 0 && next > maxStock) {
+    alert('No queda más stock disponible de este producto.');
+    return;
+  }
   if (next <= 0) delete cart[key];
   else cart[key] = next;
   saveCart();
@@ -442,14 +458,9 @@ function renderPaypalButtons(total, ids) {
     container.innerHTML = '';
     window.paypal.Buttons({
       style: { shape: 'pill', color: 'black', layout: 'vertical', label: 'paypal' },
-      createOrder: (data, actions) => {
-        // PayPal no admite CLP como moneda de checkout: convertimos a USD
-        // con un tipo de cambio fijo aproximado solo para esta demo.
-        const usdValue = (total / paypalConfig.clpPerUsd).toFixed(2);
-        return actions.order.create({
-          purchase_units: [{ amount: { currency_code: paypalConfig.currency, value: usdValue } }]
-        });
-      },
+      createOrder: (data, actions) => actions.order.create({
+        purchase_units: [{ amount: { currency_code: paypalConfig.currency, value: total.toFixed(2) } }]
+      }),
       onApprove: (data, actions) => actions.order.capture()
         .then(() => fetch('/api/checkout/confirm', {
           method: 'POST',

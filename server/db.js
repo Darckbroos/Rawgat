@@ -25,7 +25,7 @@ function seedDemoPurchases() {
   const purchases = [];
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
-  const amounts = { 1: 42990, 2: 54990, 3: 21990, 4: 17990 };
+  const amounts = { 1: 44.90, 2: 59.90, 3: 24.90, 4: 19.90 };
   const weights = [[1, 0.4], [2, 0.25], [3, 0.2], [4, 0.15]];
 
   for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
@@ -72,8 +72,8 @@ function seedDemoTransactions(purchases, branches) {
   today.setHours(0, 0, 0, 0);
 
   const physicalProfiles = [
-    { dailySale: [40000, 140000], rent: 850000, payroll: 620000 },
-    { dailySale: [25000, 95000], rent: 620000, payroll: 480000 }
+    { dailySale: [40, 150], rent: 900, payroll: 650 },
+    { dailySale: [25, 95], rent: 650, payroll: 500 }
   ];
 
   branches.filter(b => b.type === 'physical').forEach((branch, i) => {
@@ -102,7 +102,7 @@ function seedDemoTransactions(purchases, branches) {
           type: 'expense',
           category,
           description: category,
-          amount: 12000 + Math.floor(Math.random() * 55000),
+          amount: 12 + Math.floor(Math.random() * 55),
           method: 'transferencia',
           date,
           createdAt: d.toISOString()
@@ -135,10 +135,10 @@ function buildDefaultData() {
       passwordHash: bcrypt.hashSync(adminPassword, 10)
     },
     products: [
-      { id: 1, name: 'Pantalón Gastón', description: 'Elastano 4 vías, corte cónico, refuerzo en rodilla.', price: 42990, category: 'Pantalones', tag: 'Más vendido', icon: 'pants', active: true, createdAt: new Date().toISOString() },
-      { id: 2, name: 'Polerón Muro', description: 'Softshell liviano, capucha compatible con casco.', price: 54990, category: 'Poleras', tag: 'Nuevo', icon: 'hoodie', active: true, createdAt: new Date().toISOString() },
-      { id: 3, name: 'Camiseta Roca Seca', description: 'Tejido técnico anti-olor, secado ultra rápido.', price: 21990, category: 'Poleras', tag: '', icon: 'shirt', active: true, createdAt: new Date().toISOString() },
-      { id: 4, name: 'Chalk Bag Cóndor', description: 'Cierre de cordón, cepillo integrado, correa ajustable.', price: 17990, category: 'Accesorios', tag: '', icon: 'chalkbag', active: true, createdAt: new Date().toISOString() }
+      { id: 1, name: 'Pantalón Gastón', description: 'Elastano 4 vías, corte cónico, refuerzo en rodilla.', price: 44.90, category: 'Pantalones', tag: 'Más vendido', icon: 'pants', stock: 24, active: true, createdAt: new Date().toISOString() },
+      { id: 2, name: 'Polerón Muro', description: 'Softshell liviano, capucha compatible con casco.', price: 59.90, category: 'Poleras', tag: 'Nuevo', icon: 'hoodie', stock: 15, active: true, createdAt: new Date().toISOString() },
+      { id: 3, name: 'Camiseta Roca Seca', description: 'Tejido técnico anti-olor, secado ultra rápido.', price: 24.90, category: 'Poleras', tag: '', icon: 'shirt', stock: 32, active: true, createdAt: new Date().toISOString() },
+      { id: 4, name: 'Chalk Bag Cóndor', description: 'Cierre de cordón, cepillo integrado, correa ajustable.', price: 19.90, category: 'Accesorios', tag: '', icon: 'chalkbag', stock: 40, active: true, createdAt: new Date().toISOString() }
     ],
     discounts: [
       { id: 1, code: 'PRIMERAVEZ10', description: '10% de descuento en tu primera compra', percent: 10, active: true, expiresAt: null, scope: 'all', scopeValue: null, createdAt: new Date().toISOString() }
@@ -224,6 +224,8 @@ function addProduct(input) {
     category: input.category || 'General',
     tag: input.tag || '',
     icon: input.icon || 'shirt',
+    image: input.image || null,
+    stock: Math.max(0, Math.floor(Number(input.stock))) || 0,
     active: input.active !== false,
     createdAt: new Date().toISOString()
   };
@@ -242,10 +244,21 @@ function updateProduct(id, input) {
     category: input.category ?? product.category,
     tag: input.tag ?? product.tag,
     icon: input.icon ?? product.icon,
+    image: input.image !== undefined ? (input.image || null) : product.image,
+    stock: input.stock !== undefined ? Math.max(0, Math.floor(Number(input.stock)) || 0) : product.stock,
     active: input.active !== undefined ? !!input.active : product.active
   });
   save();
   return product;
+}
+
+// Descuenta stock tras una venta confirmada; nunca baja de 0 aunque llegue
+// a fallar alguna validación previa (defensivo, no debería pasar).
+function decrementStock(productId, qty) {
+  const product = data.products.find(p => p.id === Number(productId));
+  if (!product) return;
+  product.stock = Math.max(0, product.stock - qty);
+  save();
 }
 
 function deleteProduct(id) {
@@ -371,15 +384,18 @@ function recordPurchase(productId, amount, { qty = 1, reference = null } = {}) {
 
   const onlineBranch = data.branches.find(b => b.type === 'online');
   if (onlineBranch) {
+    const product = data.products.find(p => p.id === Number(productId));
     data.transactions.push({
       id: data._seq.transaction++,
       branchId: onlineBranch.id,
       type: 'income',
       category: 'Ventas online',
-      description: 'Venta en línea (checkout)',
+      description: product ? `Venta en línea: ${product.name}` : 'Venta en línea (checkout)',
       amount: purchase.amount,
       method: 'paypal',
       reference: reference || '',
+      productId: productId || null,
+      qty: purchase.qty,
       date: purchase.createdAt.slice(0, 10),
       createdAt: purchase.createdAt,
       demo: false
@@ -633,7 +649,7 @@ function getAccountingSeries({ branchId, days = 30 } = {}) {
 
 module.exports = {
   getAdmin,
-  getProducts, addProduct, updateProduct, deleteProduct,
+  getProducts, addProduct, updateProduct, deleteProduct, decrementStock,
   getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,
   recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getProductPerformance, getSummary,
   getBranches, addBranch, updateBranch, deleteBranch,

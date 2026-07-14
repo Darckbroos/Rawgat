@@ -1,3 +1,5 @@
 node_modules/
 .env
 data/db.json
+public/assets/img/products/*
+!public/assets/img/products/.gitkeep

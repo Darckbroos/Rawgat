@@ -160,6 +160,16 @@
 
       <div class="chart-card">
         <div class="chart-card__head">
+          <h2>Por producto</h2>
+          <p class="chart-card__note">Ventas online del período seleccionado (las ventas en tienda física se registran como total del día, sin desglose por producto).</p>
+        </div>
+        <div class="product-chart-box">
+          <canvas id="acctProductChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card__head">
           <h2>Por categoría</h2>
         </div>
         <div class="category-breakdown" id="categoryBreakdownBody"></div>
@@ -213,9 +223,11 @@
       <table class="admin-table" id="productsTable">
         <thead>
           <tr>
+            <th>Imagen</th>
             <th>Nombre</th>
             <th>Categoría</th>
             <th>Precio</th>
+            <th>Stock</th>
             <th>Etiqueta</th>
             <th>Activo</th>
             <th></th>

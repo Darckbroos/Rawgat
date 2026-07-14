@@ -18,7 +18,7 @@ async function api(url, options = {}) {
   return res.json();
 }
 
-const money = (value) => `$${Number(value || 0).toLocaleString('es-CL')}`;
+const money = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
 const CATEGORIES = ['Pantalones', 'Poleras', 'Accesorios'];
 
 // ---------------- LOGIN PAGE ----------------
@@ -93,10 +93,10 @@ if (page === 'dashboard') {
       return;
     }
 
-    document.getElementById('statVisits30').textContent = summary.visits30.toLocaleString('es-CL');
-    document.getElementById('statVisits7').textContent = `${summary.visits7.toLocaleString('es-CL')} últimos 7 días`;
-    document.getElementById('statPurchases30').textContent = summary.purchases30.toLocaleString('es-CL');
-    document.getElementById('statPurchases7').textContent = `${summary.purchases7.toLocaleString('es-CL')} últimos 7 días`;
+    document.getElementById('statVisits30').textContent = summary.visits30.toLocaleString('es-ES');
+    document.getElementById('statVisits7').textContent = `${summary.visits7.toLocaleString('es-ES')} últimos 7 días`;
+    document.getElementById('statPurchases30').textContent = summary.purchases30.toLocaleString('es-ES');
+    document.getElementById('statPurchases7').textContent = `${summary.purchases7.toLocaleString('es-ES')} últimos 7 días`;
     document.getElementById('statRevenue30').textContent = money(summary.revenue30);
     document.getElementById('statConversion').textContent =
       summary.conversionRate30 === null ? 'N/D' : `${summary.conversionRate30}%`;
@@ -234,7 +234,7 @@ if (page === 'dashboard') {
           ${i === 0 ? ' <span class="badge badge--on">Más vendido</span>' : ''}
         </td>
         <td>${p.category}</td>
-        <td>${p.unitsSold.toLocaleString('es-CL')}</td>
+        <td>${p.unitsSold.toLocaleString('es-ES')}</td>
         <td>${money(p.revenue)}</td>
         <td>${p.revenueShare}%</td>
       </tr>
@@ -271,11 +271,43 @@ if (page === 'dashboard') {
         label.innerHTML = `${field.label}<select name="${field.name}">${opts}</select>`;
       } else if (field.type === 'textarea') {
         label.innerHTML = `${field.label}<textarea name="${field.name}" rows="3">${value}</textarea>`;
+      } else if (field.type === 'image') {
+        label.innerHTML = `
+          ${field.label}
+          <span class="image-field">
+            <span class="image-field__preview" data-image-preview>${value ? `<img src="${value}" alt="">` : '<span class="image-field__empty">Sin imagen</span>'}</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-image-upload>
+            <input type="hidden" name="${field.name}" value="${value}">
+          </span>
+        `;
       } else {
-        label.innerHTML = `${field.label}<input type="${field.type}" name="${field.name}" value="${value}" ${field.required ? 'required' : ''}>`;
+        label.innerHTML = `${field.label}<input type="${field.type}" name="${field.name}" value="${value}" ${field.step ? `step="${field.step}"` : ''} ${field.required ? 'required' : ''}>`;
       }
       modalFields.appendChild(label);
     });
+
+    modalFields.querySelectorAll('[data-image-upload]').forEach(fileInput => {
+      const preview = fileInput.previousElementSibling;
+      const hiddenInput = fileInput.nextElementSibling;
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        preview.innerHTML = '<span class="image-field__empty">Subiendo…</span>';
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+          const res = await fetch('/admin/api/products/upload', { method: 'POST', credentials: 'same-origin', body: formData });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.error || 'No se pudo subir la imagen');
+          hiddenInput.value = body.url;
+          preview.innerHTML = `<img src="${body.url}" alt="">`;
+        } catch (err) {
+          preview.innerHTML = '<span class="image-field__empty">Sin imagen</span>';
+          alert(err.message);
+        }
+      });
+    });
+
     onSubmit = submitHandler;
     modal.hidden = false;
     if (onRender) onRender(modalFields, initialValues);
@@ -297,20 +329,32 @@ if (page === 'dashboard') {
       values[input.name] = input.type === 'checkbox' ? input.checked : input.value;
     });
     if (onSubmit) {
-      await onSubmit(values);
-      closeModal();
+      try {
+        await onSubmit(values);
+        closeModal();
+      } catch (err) {
+        alert(err.message || 'No se pudo guardar. Intenta de nuevo.');
+      }
     }
   });
 
   // ----- Products -----
   const PRODUCT_FIELDS = [
+    { name: 'image', label: 'Imagen del producto', type: 'image' },
     { name: 'name', label: 'Nombre', type: 'text', required: true },
     { name: 'description', label: 'Descripción', type: 'textarea' },
-    { name: 'price', label: 'Precio (CLP)', type: 'number', required: true },
+    { name: 'price', label: 'Precio (EUR)', type: 'number', step: '0.01', required: true },
+    { name: 'stock', label: 'Stock disponible', type: 'number', step: '1', required: true },
     { name: 'category', label: 'Categoría', type: 'select', options: CATEGORIES },
     { name: 'tag', label: 'Etiqueta (ej. Nuevo, Más vendido)', type: 'text' },
     { name: 'active', label: 'Producto activo (visible en la tienda)', type: 'checkbox' }
   ];
+
+  function stockBadge(stock) {
+    if (stock <= 0) return `<span class="badge badge--off">Agotado</span>`;
+    if (stock <= 5) return `<span class="badge badge--warn">Bajo: ${stock}</span>`;
+    return stock.toLocaleString('es-ES');
+  }
 
   async function loadProducts() {
     let products;
@@ -318,15 +362,17 @@ if (page === 'dashboard') {
       products = await api('/admin/api/products');
     } catch (err) {
       console.error('No se pudieron cargar los productos', err);
-      document.querySelector('#productsTable tbody').innerHTML = '<tr><td colspan="6">No se pudo cargar la información.</td></tr>';
+      document.querySelector('#productsTable tbody').innerHTML = '<tr><td colspan="8">No se pudo cargar la información.</td></tr>';
       return;
     }
     const tbody = document.querySelector('#productsTable tbody');
     tbody.innerHTML = products.map(p => `
       <tr data-id="${p.id}">
+        <td>${p.image ? `<img class="product-thumb" src="${p.image}" alt="">` : '<span class="product-thumb product-thumb--empty"></span>'}</td>
         <td>${p.name}</td>
         <td>${p.category}</td>
         <td>${money(p.price)}</td>
+        <td>${stockBadge(p.stock || 0)}</td>
         <td>${p.tag || '—'}</td>
         <td><span class="badge ${p.active ? 'badge--on' : 'badge--off'}">${p.active ? 'Activo' : 'Oculto'}</span></td>
         <td class="actions">
@@ -334,7 +380,7 @@ if (page === 'dashboard') {
           <button class="btn btn--danger btn--sm" data-delete="${p.id}">Eliminar</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="6">Sin productos todavía.</td></tr>';
+    `).join('') || '<tr><td colspan="8">Sin productos todavía.</td></tr>';
 
     tbody.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -355,7 +401,7 @@ if (page === 'dashboard') {
   }
 
   document.getElementById('newProductBtn').addEventListener('click', () => {
-    openModal('Nuevo producto', PRODUCT_FIELDS, { active: true, category: 'Pantalones' }, async (values) => {
+    openModal('Nuevo producto', PRODUCT_FIELDS, { active: true, category: 'Pantalones', stock: 0 }, async (values) => {
       await api('/admin/api/products', { method: 'POST', body: JSON.stringify(values) });
       loadProducts();
     });
@@ -426,7 +472,7 @@ if (page === 'dashboard') {
         <td>${d.code}</td>
         <td>${discountScopeLabel(d, productById)}</td>
         <td>${d.percent}%</td>
-        <td>${d.expiresAt ? new Date(d.expiresAt).toLocaleDateString('es-CL') : '—'}</td>
+        <td>${d.expiresAt ? new Date(d.expiresAt).toLocaleDateString('es-ES') : '—'}</td>
         <td><span class="badge ${d.active ? 'badge--on' : 'badge--off'}">${d.active ? 'Activo' : 'Inactivo'}</span></td>
         <td class="actions">
           <button class="btn btn--ghost btn--sm" data-edit="${d.id}">Editar</button>
@@ -544,7 +590,7 @@ if (page === 'dashboard') {
       { name: 'type', label: 'Tipo', type: 'select', options: ['income', 'expense'], optionLabels: { income: 'Ingreso', expense: 'Gasto' } },
       { name: 'category', label: 'Categoría', type: 'select', options: accountingCategories.income },
       { name: 'description', label: 'Descripción', type: 'text' },
-      { name: 'amount', label: 'Monto (CLP)', type: 'number', required: true },
+      { name: 'amount', label: 'Monto (EUR)', type: 'number', step: '0.01', required: true },
       {
         name: 'method', label: 'Medio de pago', type: 'select',
         options: ['efectivo', 'transferencia', 'tarjeta', 'paypal'],
@@ -603,7 +649,7 @@ if (page === 'dashboard') {
     const tbody = document.querySelector('#transactionsTable tbody');
     tbody.innerHTML = pageItems.map(t => `
       <tr data-id="${t.id}">
-        <td>${new Date(t.date).toLocaleDateString('es-CL')}</td>
+        <td>${new Date(t.date).toLocaleDateString('es-ES')}</td>
         <td>${branchById[t.branchId] || '—'}</td>
         <td><span class="badge ${t.type === 'income' ? 'badge--on' : 'badge--off'}">${t.type === 'income' ? 'Ingreso' : 'Gasto'}</span></td>
         <td>${t.category}</td>
@@ -685,6 +731,41 @@ if (page === 'dashboard') {
     });
   }
 
+  let acctProductChart;
+
+  function renderAccountingProductChart(products) {
+    const ctx = document.getElementById('acctProductChart');
+    const labels = products.map(p => p.name);
+    const revenueData = products.map(p => p.revenue);
+
+    if (acctProductChart) acctProductChart.destroy();
+    if (!products.length) return;
+
+    acctProductChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Ingresos por producto',
+          data: revenueData,
+          backgroundColor: 'rgba(194,84,44,0.75)',
+          borderRadius: 6,
+          barThickness: 22
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { callback: (v) => money(v) }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
   async function loadTransactions({ resetPage = false } = {}) {
     const { branchId, days, from } = currentAccountingFilters();
 
@@ -694,12 +775,13 @@ if (page === 'dashboard') {
     const summaryParams = new URLSearchParams({ days });
     if (branchId) summaryParams.set('branchId', branchId);
 
-    let transactions, summary, series;
+    let transactions, summary, series, productPerformance;
     try {
-      [transactions, summary, series] = await Promise.all([
+      [transactions, summary, series, productPerformance] = await Promise.all([
         api(`/admin/api/transactions?${txParams}`),
         api(`/admin/api/accounting/summary?${summaryParams}`),
-        api(`/admin/api/accounting/series?${summaryParams}`)
+        api(`/admin/api/accounting/series?${summaryParams}`),
+        api(`/admin/api/analytics/products?days=${days}`)
       ]);
     } catch (err) {
       console.error('No se pudo cargar la contabilidad', err);
@@ -731,6 +813,7 @@ if (page === 'dashboard') {
     renderCategoryBreakdown(summary.byCategory);
     renderTransactionsTable();
     renderAccountingChart(series);
+    renderAccountingProductChart(productPerformance);
   }
 
   document.getElementById('newTransactionBtn').addEventListener('click', () => {
@@ -779,4 +862,20 @@ if (page === 'dashboard') {
       console.error('No se pudo cargar la contabilidad', err);
       document.querySelector('#transactionsTable tbody').innerHTML = '<tr><td colspan="8">No se pudo cargar la información.</td></tr>';
     });
+
+  // Mantiene el resumen, la contabilidad y el stock al día sin recargar la
+  // página. Se salta la actualización mientras hay un modal abierto para no
+  // interrumpir una edición en curso.
+  setInterval(() => {
+    if (!modal.hidden) return;
+    const activeId = document.querySelector('.admin-section.is-active')?.id;
+    if (activeId === 'section-resumen') {
+      loadAnalytics();
+      loadProductPerformance();
+    } else if (activeId === 'section-contabilidad') {
+      loadTransactions();
+    } else if (activeId === 'section-productos') {
+      loadProducts();
+    }
+  }, 30000);
 }
