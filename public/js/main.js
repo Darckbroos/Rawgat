@@ -186,6 +186,7 @@ function renderProducts(products) {
   if (!grid) return;
 
   const filtered = products.filter(p => {
+    if (currentFilter.type === 'sale') return !!p.discount;
     if (currentFilter.type === 'category') return p.category === currentFilter.value;
     if (currentFilter.value === 'Todos') return true;
     return p.audience === currentFilter.value || p.audience === 'Unisex';
@@ -243,16 +244,27 @@ function renderProducts(products) {
 let PRODUCTS = [];
 let currentFilter = { type: 'audience', value: 'Todos' };
 
-document.getElementById('audienceFilters')?.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-audience], [data-category]');
-  if (!btn) return;
-  currentFilter = btn.dataset.category
-    ? { type: 'category', value: btn.dataset.category }
-    : { type: 'audience', value: btn.dataset.audience };
-  document.querySelectorAll('#audienceFilters button').forEach(b => {
-    b.classList.toggle('is-active', b === btn);
+// Las mismas categorías se eligen desde el menú superior (como en las tiendas
+// de la competencia) y desde los chips sobre la colección — un solo lugar
+// decide el filtro, para que ambos queden sincronizados.
+function applyCollectionFilter(el) {
+  if (el.dataset.sale) currentFilter = { type: 'sale', value: true };
+  else if (el.dataset.category) currentFilter = { type: 'category', value: el.dataset.category };
+  else currentFilter = { type: 'audience', value: el.dataset.audience };
+
+  document.querySelectorAll('#nav [data-audience], #nav [data-category], #nav [data-sale]').forEach(link => {
+    const sameFilter = el.dataset.sale
+      ? !!link.dataset.sale
+      : el.dataset.category
+        ? link.dataset.category === el.dataset.category
+        : link.dataset.audience === el.dataset.audience;
+    link.classList.toggle('is-active', sameFilter);
   });
   renderProducts(PRODUCTS);
+}
+
+document.querySelectorAll('#nav [data-audience], #nav [data-category], #nav [data-sale]').forEach(link => {
+  link.addEventListener('click', () => applyCollectionFilter(link));
 });
 
 fetch('/api/products')

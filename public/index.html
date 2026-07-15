@@ -22,11 +22,12 @@
     </a>
 
     <nav class="nav" id="nav">
-      <a href="#coleccion">Colección</a>
-      <a href="#tecnologia">Tecnología</a>
-      <a href="#historia">Historia</a>
-      <a href="#opiniones">Opiniones</a>
-      <a href="#contacto">Contacto</a>
+      <a href="#coleccion" data-audience="Todos" class="is-active">Colección</a>
+      <a href="#coleccion" data-audience="Hombre">Hombre</a>
+      <a href="#coleccion" data-audience="Mujer">Mujer</a>
+      <a href="#coleccion" data-audience="Niños">Niños</a>
+      <a href="#coleccion" data-category="Accesorios">Accesorios</a>
+      <a href="#coleccion" data-sale="true" class="nav__sale">Rebajas</a>
     </nav>
 
     <div class="header__actions">
@@ -141,14 +142,7 @@
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Colección</p>
-        <h2>Equípate de la pared al boulder</h2>
-      </div>
-      <div class="collection__filters" id="audienceFilters">
-        <button type="button" class="filter-chip is-active" data-audience="Todos">Todos</button>
-        <button type="button" class="filter-chip" data-audience="Hombre">Hombre</button>
-        <button type="button" class="filter-chip" data-audience="Mujer">Mujer</button>
-        <button type="button" class="filter-chip" data-audience="Niños">Niños</button>
-        <button type="button" class="filter-chip" data-category="Accesorios">Accesorios</button>
+        <h2>Equípate para la aventura</h2>
       </div>
       <div class="collection__grid" id="collectionGrid" data-tilt-root>
         <p class="collection__loading">Cargando colección…</p>
