@@ -206,7 +206,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   gap: 24px;
-  align-items: stretch;
+  align-items: start;
 }
 .product-chart-box { position: relative; height: 280px; }
 

@@ -181,6 +181,11 @@ if (page === 'dashboard') {
     const totalUnits = unitsData.reduce((sum, n) => sum + n, 0);
     const colors = products.map((p, i) => productColor(i));
 
+    // Con altura fija, más productos = barras más apretadas entre sí. La
+    // caja crece con la cantidad de productos para que siempre quede el
+    // mismo aire entre una barra y la siguiente.
+    barCtx.parentElement.style.height = `${Math.max(280, products.length * 38)}px`;
+
     if (productBarChart) productBarChart.destroy();
     productBarChart = new Chart(barCtx, {
       type: 'bar',
@@ -191,7 +196,9 @@ if (page === 'dashboard') {
           data: unitsData,
           backgroundColor: colors,
           borderRadius: 6,
-          barThickness: 20
+          barThickness: 20,
+          categoryPercentage: 0.6,
+          barPercentage: 0.9
         }]
       },
       options: {
