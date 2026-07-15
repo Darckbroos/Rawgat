@@ -144,7 +144,8 @@ const PRODUCT_ICONS = {
   pants: '<path d="M22 8h20l3 10-7 3v35h-6V27l-4-2-4 2v29h-6V21l-7-3 3-10Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>',
   hoodie: '<path d="M20 14 12 20v8h6v26h28V28h6v-8l-8-6h-6a6 6 0 0 1-12 0Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>',
   shirt: '<path d="M22 10h20l6 8-8 6v30H24V24l-8-6 6-8Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>',
-  chalkbag: '<path d="M32 12c8 0 14 6 14 14 0 10-6 16-14 24-8-8-14-14-14-24 0-8 6-14 14-14Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M25 24h14" stroke="currentColor" stroke-width="2.5"/>'
+  chalkbag: '<path d="M32 12c8 0 14 6 14 14 0 10-6 16-14 24-8-8-14-14-14-24 0-8 6-14 14-14Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M25 24h14" stroke="currentColor" stroke-width="2.5"/>',
+  tech: '<circle cx="32" cy="36" r="18" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M32 36 32 24 M32 36 40 41" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M24 10h16l-3 8H27Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>'
 };
 const MEDIA_CLASSES = ['product-card__media--1', 'product-card__media--2', 'product-card__media--3', 'product-card__media--4'];
 const money = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
@@ -178,14 +179,17 @@ function updateCountdowns() {
 setInterval(updateCountdowns, 60000);
 
 const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const CLOTHING_CATEGORIES = ['Pantalones', 'Poleras'];
 
 function renderProducts(products) {
   const grid = document.getElementById('collectionGrid');
   if (!grid) return;
 
-  const filtered = currentAudienceFilter === 'Todos'
-    ? products
-    : products.filter(p => p.audience === currentAudienceFilter || p.audience === 'Unisex');
+  const filtered = products.filter(p => {
+    if (currentFilter.type === 'category') return p.category === currentFilter.value;
+    if (currentFilter.value === 'Todos') return true;
+    return p.audience === currentFilter.value || p.audience === 'Unisex';
+  });
 
   if (!filtered.length) {
     grid.innerHTML = '<p class="collection__loading">No hay productos para este filtro todavía.</p>';
@@ -199,7 +203,7 @@ function renderProducts(products) {
       : money(p.price);
     const outOfStock = Number(p.stock) <= 0;
     const sizes = Array.isArray(p.sizes) ? p.sizes : [];
-    const showSizePicker = p.category !== 'Accesorios' && !outOfStock;
+    const showSizePicker = CLOTHING_CATEGORIES.includes(p.category) && !outOfStock;
     const sizeOptions = CLOTHING_SIZES.map(size => {
       const entry = sizes.find(s => s.size === size);
       const stock = entry ? entry.stock : 0;
@@ -237,13 +241,15 @@ function renderProducts(products) {
 }
 
 let PRODUCTS = [];
-let currentAudienceFilter = 'Todos';
+let currentFilter = { type: 'audience', value: 'Todos' };
 
 document.getElementById('audienceFilters')?.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-audience]');
+  const btn = e.target.closest('[data-audience], [data-category]');
   if (!btn) return;
-  currentAudienceFilter = btn.dataset.audience;
-  document.querySelectorAll('#audienceFilters [data-audience]').forEach(b => {
+  currentFilter = btn.dataset.category
+    ? { type: 'category', value: btn.dataset.category }
+    : { type: 'audience', value: btn.dataset.audience };
+  document.querySelectorAll('#audienceFilters button').forEach(b => {
     b.classList.toggle('is-active', b === btn);
   });
   renderProducts(PRODUCTS);

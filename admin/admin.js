@@ -19,7 +19,7 @@ async function api(url, options = {}) {
 }
 
 const money = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
-const CATEGORIES = ['Pantalones', 'Poleras', 'Accesorios'];
+const CATEGORIES = ['Pantalones', 'Poleras', 'Accesorios', 'Tecnología'];
 const AUDIENCES = ['Hombre', 'Mujer', 'Niños', 'Unisex'];
 const SIZE_CODES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'UNICA'];
 const SIZE_LABELS = { XS: 'XS', S: 'S', M: 'M', L: 'L', XL: 'XL', XXL: 'XXL', UNICA: 'Única' };
