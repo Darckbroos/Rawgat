@@ -188,6 +188,22 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 
 #productPerfTable { margin-top: 20px; }
 
 /* Product comparison charts */
+.category-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; }
+.category-legend__item { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--stone); font-weight: 600; }
+.category-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+
+.category-group-row td {
+  padding-top: 18px;
+  padding-bottom: 6px;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--stone);
+  border-bottom: none;
+}
+.category-group-row:first-child td { padding-top: 12px; }
+
 .product-charts-grid {
   display: grid;
   grid-template-columns: 1.3fr 1fr;

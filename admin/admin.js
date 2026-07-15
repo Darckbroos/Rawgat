@@ -160,10 +160,26 @@ if (page === 'dashboard') {
   loadAnalytics();
 
   // ----- Product comparison -----
-  // Paleta categórica validada (CVD-safe) para distinguir productos en el
-  // gráfico de torta — no es el acento de marca porque ahí la función del
-  // color es identidad (qué producto es), no magnitud.
-  const PRODUCT_PIE_COLORS = ['#2a78d6', '#1baf7a', '#eb6834', '#4a3aa7', '#e34948', '#eda100'];
+  // Un color fijo por categoría (no por producto): así el mismo color se
+  // repite entre Pantalones, entre Poleras, etc., y categoría queda
+  // representada tanto en la tabla como en ambos gráficos.
+  const CATEGORY_COLORS = {
+    'Pantalones': '#2a78d6',
+    'Poleras': '#1baf7a',
+    'Accesorios': '#eb6834',
+    'Tecnología': '#4a3aa7'
+  };
+  const DEFAULT_CATEGORY_COLOR = '#8a8f98';
+  const categoryColor = (category) => CATEGORY_COLORS[category] || DEFAULT_CATEGORY_COLOR;
+
+  function renderCategoryLegend(products) {
+    const legend = document.getElementById('productCategoryLegend');
+    if (!legend) return;
+    const categories = [...new Set(products.map(p => p.category))];
+    legend.innerHTML = categories.map(cat => `
+      <span class="category-legend__item"><span class="category-dot" style="background:${categoryColor(cat)}"></span>${cat}</span>
+    `).join('');
+  }
 
   let productBarChart;
   let productPieChart;
@@ -174,6 +190,7 @@ if (page === 'dashboard') {
     const labels = products.map(p => p.name);
     const unitsData = products.map(p => p.unitsSold);
     const totalUnits = unitsData.reduce((sum, n) => sum + n, 0);
+    const colors = products.map(p => categoryColor(p.category));
 
     if (productBarChart) productBarChart.destroy();
     productBarChart = new Chart(barCtx, {
@@ -183,10 +200,9 @@ if (page === 'dashboard') {
         datasets: [{
           label: 'Unidades vendidas',
           data: unitsData,
-          backgroundColor: 'rgba(194,84,44,0.75)',
-          hoverBackgroundColor: 'rgba(194,84,44,0.95)',
+          backgroundColor: colors,
           borderRadius: 6,
-          barThickness: 22
+          barThickness: 20
         }]
       },
       options: {
@@ -195,7 +211,7 @@ if (page === 'dashboard') {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          title: { display: true, text: 'Unidades vendidas por producto', align: 'start', font: { size: 13 }, color: '#5b6670', padding: { bottom: 12 } }
+          title: { display: true, text: 'Unidades vendidas por producto (color = categoría)', align: 'start', font: { size: 13 }, color: '#5b6670', padding: { bottom: 12 } }
         },
         scales: {
           x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } },
@@ -214,7 +230,7 @@ if (page === 'dashboard') {
         }),
         datasets: [{
           data: unitsData,
-          backgroundColor: PRODUCT_PIE_COLORS,
+          backgroundColor: colors,
           borderColor: '#ffffff',
           borderWidth: 2
         }]
@@ -224,10 +240,12 @@ if (page === 'dashboard') {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
-          title: { display: true, text: 'Reparto de gustos (% de unidades)', align: 'start', font: { size: 13 }, color: '#5b6670', padding: { bottom: 12 } }
+          title: { display: true, text: 'Reparto de ventas (% de unidades)', align: 'start', font: { size: 13 }, color: '#5b6670', padding: { bottom: 12 } }
         }
       }
     });
+
+    renderCategoryLegend(products);
   }
 
   async function loadProductPerformance() {
@@ -241,20 +259,28 @@ if (page === 'dashboard') {
       return;
     }
 
+    const topUnits = Math.max(0, ...products.map(p => p.unitsSold));
+    let lastCategory = null;
     const tbody = document.querySelector('#productPerfTable tbody');
-    tbody.innerHTML = products.map((p, i) => `
-      <tr>
-        <td>
-          ${p.name}
-          ${p.active === false ? ' <span class="badge badge--off">Oculto</span>' : ''}
-          ${i === 0 ? ' <span class="badge badge--on">Más vendido</span>' : ''}
-        </td>
-        <td>${p.category}</td>
-        <td>${p.unitsSold.toLocaleString('es-ES')}</td>
-        <td>${money(p.revenue)}</td>
-        <td>${p.revenueShare}%</td>
-      </tr>
-    `).join('') || '<tr><td colspan="5">Sin ventas en este período.</td></tr>';
+    tbody.innerHTML = products.map(p => {
+      const groupHeader = p.category !== lastCategory
+        ? `<tr class="category-group-row"><td colspan="5"><span class="category-dot" style="background:${categoryColor(p.category)}"></span>${p.category}</td></tr>`
+        : '';
+      lastCategory = p.category;
+      return `${groupHeader}
+        <tr>
+          <td>
+            ${p.name}
+            ${p.active === false ? ' <span class="badge badge--off">Oculto</span>' : ''}
+            ${topUnits > 0 && p.unitsSold === topUnits ? ' <span class="badge badge--on">Más vendido</span>' : ''}
+          </td>
+          <td>${p.category}</td>
+          <td>${p.unitsSold.toLocaleString('es-ES')}</td>
+          <td>${money(p.revenue)}</td>
+          <td>${p.revenueShare}%</td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="5">Sin productos todavía.</td></tr>';
 
     renderProductCharts(products);
   }

@@ -490,31 +490,33 @@ function getProductPerformance({ days = 90 } = {}) {
   const inRange = data.purchases.filter(p => new Date(p.createdAt).getTime() >= since);
   const totalRevenue = inRange.reduce((sum, p) => sum + p.amount, 0);
 
-  const byProduct = {};
+  const statsByProduct = {};
   inRange.forEach(p => {
     const key = p.productId || 'unknown';
-    if (!byProduct[key]) byProduct[key] = { unitsSold: 0, revenue: 0, orders: 0 };
-    byProduct[key].unitsSold += p.qty || 1;
-    byProduct[key].revenue += p.amount;
-    byProduct[key].orders += 1;
+    if (!statsByProduct[key]) statsByProduct[key] = { unitsSold: 0, revenue: 0, orders: 0 };
+    statsByProduct[key].unitsSold += p.qty || 1;
+    statsByProduct[key].revenue += p.amount;
+    statsByProduct[key].orders += 1;
   });
 
-  return Object.entries(byProduct)
-    .map(([productId, stats]) => {
-      const product = data.products.find(p => p.id === Number(productId));
+  // Se muestra todo el catálogo, no solo lo que tuvo ventas en el período,
+  // agrupado por categoría — así se ve también qué no se está vendiendo.
+  return data.products
+    .map(product => {
+      const stats = statsByProduct[product.id] || { unitsSold: 0, revenue: 0, orders: 0 };
       return {
-        productId: product ? product.id : null,
-        name: product ? product.name : 'Producto eliminado',
-        category: product ? product.category : '—',
-        icon: product ? product.icon : 'shirt',
-        active: product ? product.active : false,
+        productId: product.id,
+        name: product.name,
+        category: product.category,
+        icon: product.icon,
+        active: product.active,
         unitsSold: stats.unitsSold,
         revenue: stats.revenue,
         orders: stats.orders,
         revenueShare: totalRevenue > 0 ? Math.round((stats.revenue / totalRevenue) * 1000) / 10 : 0
       };
     })
-    .sort((a, b) => b.unitsSold - a.unitsSold);
+    .sort((a, b) => a.category.localeCompare(b.category, 'es') || b.unitsSold - a.unitsSold);
 }
 
 function getSummary() {
