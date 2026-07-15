@@ -359,6 +359,26 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 
 }
 .product-thumb--empty { border: 1.5px dashed rgba(0,0,0,0.12); }
 
+/* Sizes field */
+.sizes-field { display: flex; flex-wrap: wrap; gap: 10px; }
+.sizes-field__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 54px;
+}
+.sizes-field__label { font-size: .7rem; font-weight: 700; color: var(--stone); }
+.sizes-field__item input {
+  width: 100%;
+  padding: 8px 4px;
+  text-align: center;
+  border-radius: 8px;
+  border: 1.5px solid var(--paper-2);
+  font-family: var(--font-body);
+  font-size: .86rem;
+}
+
 @media (max-width: 860px) {
   .admin-shell { grid-template-columns: 1fr; }
   .admin-sidebar { height: auto; position: relative; flex-direction: row; align-items: center; flex-wrap: wrap; }

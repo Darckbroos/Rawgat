@@ -8,6 +8,27 @@ function nextId(list) {
   return list.reduce((max, item) => Math.max(max, item.id), 0) + 1;
 }
 
+// "Única" cubre productos sin talla real (accesorios): así todo producto
+// usa la misma estructura de stock por talla, sin dos caminos de código.
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Única'];
+const AUDIENCES = ['Hombre', 'Mujer', 'Niños', 'Unisex'];
+
+function normalizeSizes(input) {
+  const bySize = new Map();
+  if (Array.isArray(input)) {
+    input.forEach(entry => {
+      if (entry && SIZES.includes(entry.size)) {
+        bySize.set(entry.size, Math.max(0, Math.floor(Number(entry.stock)) || 0));
+      }
+    });
+  }
+  return SIZES.map(size => ({ size, stock: bySize.get(size) || 0 }));
+}
+
+function totalStock(product) {
+  return (product.sizes || []).reduce((sum, s) => sum + s.stock, 0);
+}
+
 // Elige un producto con probabilidades distintas (no todos venden igual),
 // para que el comparador de productos tenga una señal de "gustos" real
 // que mostrar en vez de ruido uniforme.
@@ -135,10 +156,10 @@ function buildDefaultData() {
       passwordHash: bcrypt.hashSync(adminPassword, 10)
     },
     products: [
-      { id: 1, name: 'Pantalón Gastón', description: 'Elastano 4 vías, corte cónico, refuerzo en rodilla.', price: 44.90, category: 'Pantalones', tag: 'Más vendido', icon: 'pants', stock: 24, active: true, createdAt: new Date().toISOString() },
-      { id: 2, name: 'Polerón Muro', description: 'Softshell liviano, capucha compatible con casco.', price: 59.90, category: 'Poleras', tag: 'Nuevo', icon: 'hoodie', stock: 15, active: true, createdAt: new Date().toISOString() },
-      { id: 3, name: 'Camiseta Roca Seca', description: 'Tejido técnico anti-olor, secado ultra rápido.', price: 24.90, category: 'Poleras', tag: '', icon: 'shirt', stock: 32, active: true, createdAt: new Date().toISOString() },
-      { id: 4, name: 'Chalk Bag Cóndor', description: 'Cierre de cordón, cepillo integrado, correa ajustable.', price: 19.90, category: 'Accesorios', tag: '', icon: 'chalkbag', stock: 40, active: true, createdAt: new Date().toISOString() }
+      { id: 1, name: 'Pantalón Gastón', description: 'Elastano 4 vías, corte cónico, refuerzo en rodilla.', price: 44.90, category: 'Pantalones', tag: 'Más vendido', icon: 'pants', audience: 'Hombre', sizes: normalizeSizes([{ size: 'S', stock: 4 }, { size: 'M', stock: 8 }, { size: 'L', stock: 7 }, { size: 'XL', stock: 5 }]), active: true, createdAt: new Date().toISOString() },
+      { id: 2, name: 'Polerón Muro', description: 'Softshell liviano, capucha compatible con casco.', price: 59.90, category: 'Poleras', tag: 'Nuevo', icon: 'hoodie', audience: 'Unisex', sizes: normalizeSizes([{ size: 'S', stock: 3 }, { size: 'M', stock: 5 }, { size: 'L', stock: 4 }, { size: 'XL', stock: 3 }]), active: true, createdAt: new Date().toISOString() },
+      { id: 3, name: 'Camiseta Roca Seca', description: 'Tejido técnico anti-olor, secado ultra rápido.', price: 24.90, category: 'Poleras', tag: '', icon: 'shirt', audience: 'Mujer', sizes: normalizeSizes([{ size: 'XS', stock: 5 }, { size: 'S', stock: 9 }, { size: 'M', stock: 10 }, { size: 'L', stock: 8 }]), active: true, createdAt: new Date().toISOString() },
+      { id: 4, name: 'Chalk Bag Cóndor', description: 'Cierre de cordón, cepillo integrado, correa ajustable.', price: 19.90, category: 'Accesorios', tag: '', icon: 'chalkbag', audience: 'Unisex', sizes: normalizeSizes([{ size: 'Única', stock: 40 }]), active: true, createdAt: new Date().toISOString() }
     ],
     discounts: [
       { id: 1, code: 'PRIMERAVEZ10', description: '10% de descuento en tu primera compra', percent: 10, active: true, expiresAt: null, scope: 'all', scopeValue: null, createdAt: new Date().toISOString() }
@@ -170,8 +191,27 @@ function load() {
   } else {
     data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
     migrateAccountingData();
+    migrateProductSizes();
   }
   return data;
+}
+
+// Productos creados antes de las tallas tenían un solo número de stock: ese
+// número pasa íntegro a la talla "Única" para no perder lo que ya había
+// cargado, y el admin lo redistribuye por talla cuando quiera.
+function migrateProductSizes() {
+  let changed = false;
+  data.products.forEach(product => {
+    if (!Array.isArray(product.sizes)) {
+      product.sizes = normalizeSizes([{ size: 'Única', stock: product.stock || 0 }]);
+      changed = true;
+    }
+    if (!AUDIENCES.includes(product.audience)) {
+      product.audience = 'Unisex';
+      changed = true;
+    }
+  });
+  if (changed) save();
 }
 
 // Añade sucursales/movimientos a bases de datos creadas antes de que
@@ -211,8 +251,15 @@ function getAdmin() {
 }
 
 // ---------- Products ----------
+// El stock total (suma de tallas) se agrega calculado en cada respuesta:
+// "sizes" sigue siendo la fuente de verdad, nunca un número aparte que se
+// pueda desincronizar.
+function withTotalStock(product) {
+  return { ...product, stock: totalStock(product) };
+}
+
 function getProducts({ onlyActive = false } = {}) {
-  return data.products.filter(p => !onlyActive || p.active);
+  return data.products.filter(p => !onlyActive || p.active).map(withTotalStock);
 }
 
 function addProduct(input) {
@@ -222,16 +269,17 @@ function addProduct(input) {
     description: input.description || '',
     price: Number(input.price) || 0,
     category: input.category || 'General',
+    audience: AUDIENCES.includes(input.audience) ? input.audience : 'Unisex',
     tag: input.tag || '',
     icon: input.icon || 'shirt',
     image: input.image || null,
-    stock: Math.max(0, Math.floor(Number(input.stock))) || 0,
+    sizes: normalizeSizes(input.sizes),
     active: input.active !== false,
     createdAt: new Date().toISOString()
   };
   data.products.push(product);
   save();
-  return product;
+  return withTotalStock(product);
 }
 
 function updateProduct(id, input) {
@@ -242,22 +290,25 @@ function updateProduct(id, input) {
     description: input.description ?? product.description,
     price: input.price !== undefined ? Number(input.price) : product.price,
     category: input.category ?? product.category,
+    audience: input.audience !== undefined ? (AUDIENCES.includes(input.audience) ? input.audience : 'Unisex') : product.audience,
     tag: input.tag ?? product.tag,
     icon: input.icon ?? product.icon,
     image: input.image !== undefined ? (input.image || null) : product.image,
-    stock: input.stock !== undefined ? Math.max(0, Math.floor(Number(input.stock)) || 0) : product.stock,
+    sizes: input.sizes !== undefined ? normalizeSizes(input.sizes) : product.sizes,
     active: input.active !== undefined ? !!input.active : product.active
   });
   save();
-  return product;
+  return withTotalStock(product);
 }
 
-// Descuenta stock tras una venta confirmada; nunca baja de 0 aunque llegue
-// a fallar alguna validación previa (defensivo, no debería pasar).
-function decrementStock(productId, qty) {
+// Descuenta stock de una talla puntual tras una venta confirmada; nunca baja
+// de 0 aunque llegue a fallar alguna validación previa (defensivo).
+function decrementSizeStock(productId, size, qty) {
   const product = data.products.find(p => p.id === Number(productId));
   if (!product) return;
-  product.stock = Math.max(0, product.stock - qty);
+  const entry = product.sizes.find(s => s.size === size) || product.sizes.find(s => s.size === 'Única');
+  if (!entry) return;
+  entry.stock = Math.max(0, entry.stock - qty);
   save();
 }
 
@@ -378,19 +429,20 @@ function recordVisit(pagePath) {
   save();
 }
 
-function recordPurchase(productId, amount, { qty = 1, reference = null } = {}) {
-  const purchase = { id: data._seq.purchase++, productId: productId || null, qty: Number(qty) || 1, amount: Number(amount) || 0, createdAt: new Date().toISOString(), demo: false };
+function recordPurchase(productId, amount, { qty = 1, reference = null, size = null } = {}) {
+  const purchase = { id: data._seq.purchase++, productId: productId || null, qty: Number(qty) || 1, size, amount: Number(amount) || 0, createdAt: new Date().toISOString(), demo: false };
   data.purchases.push(purchase);
 
   const onlineBranch = data.branches.find(b => b.type === 'online');
   if (onlineBranch) {
     const product = data.products.find(p => p.id === Number(productId));
+    const sizeLabel = size && size !== 'Única' ? ` (talla ${size})` : '';
     data.transactions.push({
       id: data._seq.transaction++,
       branchId: onlineBranch.id,
       type: 'income',
       category: 'Ventas online',
-      description: product ? `Venta en línea: ${product.name}` : 'Venta en línea (checkout)',
+      description: product ? `Venta en línea: ${product.name}${sizeLabel}` : 'Venta en línea (checkout)',
       amount: purchase.amount,
       method: 'paypal',
       reference: reference || '',
@@ -677,7 +729,8 @@ function importData(backup) {
 
 module.exports = {
   getAdmin,
-  getProducts, addProduct, updateProduct, deleteProduct, decrementStock,
+  getProducts, addProduct, updateProduct, deleteProduct, decrementSizeStock,
+  SIZES, AUDIENCES,
   getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,
   recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getProductPerformance, getSummary,
   getBranches, addBranch, updateBranch, deleteBranch,

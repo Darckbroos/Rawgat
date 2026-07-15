@@ -20,6 +20,22 @@ async function api(url, options = {}) {
 
 const money = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
 const CATEGORIES = ['Pantalones', 'Poleras', 'Accesorios'];
+const AUDIENCES = ['Hombre', 'Mujer', 'Niños', 'Unisex'];
+const SIZE_CODES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'UNICA'];
+const SIZE_LABELS = { XS: 'XS', S: 'S', M: 'M', L: 'L', XL: 'XL', XXL: 'XXL', UNICA: 'Única' };
+
+// El editor de tallas manda inputs sueltos (size_XS, size_S, ...) para
+// aprovechar el mismo recolector genérico del modal; acá se juntan en el
+// array { size, stock } que espera el servidor antes de enviar el form.
+function packSizesFromValues(values) {
+  const sizes = SIZE_CODES.map(code => ({
+    size: SIZE_LABELS[code],
+    stock: Math.max(0, Math.floor(Number(values[`size_${code}`])) || 0)
+  }));
+  const packed = { ...values, sizes };
+  SIZE_CODES.forEach(code => delete packed[`size_${code}`]);
+  return packed;
+}
 
 // ---------------- LOGIN PAGE ----------------
 if (page === 'login') {
@@ -280,6 +296,20 @@ if (page === 'dashboard') {
             <input type="hidden" name="${field.name}" value="${value}">
           </span>
         `;
+      } else if (field.type === 'sizes') {
+        const sizesArr = (initialValues && initialValues.sizes) || [];
+        const stockByLabel = Object.fromEntries(sizesArr.map(s => [s.size, s.stock]));
+        label.innerHTML = `
+          ${field.label}
+          <span class="sizes-field">
+            ${SIZE_CODES.map(code => `
+              <span class="sizes-field__item">
+                <span class="sizes-field__label">${SIZE_LABELS[code]}</span>
+                <input type="number" min="0" step="1" name="size_${code}" value="${stockByLabel[SIZE_LABELS[code]] || 0}">
+              </span>
+            `).join('')}
+          </span>
+        `;
       } else {
         label.innerHTML = `${field.label}<input type="${field.type}" name="${field.name}" value="${value}" ${field.step ? `step="${field.step}"` : ''} ${field.required ? 'required' : ''}>`;
       }
@@ -344,8 +374,9 @@ if (page === 'dashboard') {
     { name: 'name', label: 'Nombre', type: 'text', required: true },
     { name: 'description', label: 'Descripción', type: 'textarea' },
     { name: 'price', label: 'Precio (EUR)', type: 'number', step: '0.01', required: true },
-    { name: 'stock', label: 'Stock disponible', type: 'number', step: '1', required: true },
     { name: 'category', label: 'Categoría', type: 'select', options: CATEGORIES },
+    { name: 'audience', label: 'Para', type: 'select', options: AUDIENCES },
+    { name: 'sizes', label: 'Stock por talla ("Única" para productos sin talla, ej. accesorios)', type: 'sizes' },
     { name: 'tag', label: 'Etiqueta (ej. Nuevo, Más vendido)', type: 'text' },
     { name: 'active', label: 'Producto activo (visible en la tienda)', type: 'checkbox' }
   ];
@@ -362,7 +393,7 @@ if (page === 'dashboard') {
       products = await api('/admin/api/products');
     } catch (err) {
       console.error('No se pudieron cargar los productos', err);
-      document.querySelector('#productsTable tbody').innerHTML = '<tr><td colspan="8">No se pudo cargar la información.</td></tr>';
+      document.querySelector('#productsTable tbody').innerHTML = '<tr><td colspan="9">No se pudo cargar la información.</td></tr>';
       return;
     }
     const tbody = document.querySelector('#productsTable tbody');
@@ -371,6 +402,7 @@ if (page === 'dashboard') {
         <td>${p.image ? `<img class="product-thumb" src="${p.image}" alt="">` : '<span class="product-thumb product-thumb--empty"></span>'}</td>
         <td>${p.name}</td>
         <td>${p.category}</td>
+        <td>${p.audience || 'Unisex'}</td>
         <td>${money(p.price)}</td>
         <td>${stockBadge(p.stock || 0)}</td>
         <td>${p.tag || '—'}</td>
@@ -380,13 +412,13 @@ if (page === 'dashboard') {
           <button class="btn btn--danger btn--sm" data-delete="${p.id}">Eliminar</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="8">Sin productos todavía.</td></tr>';
+    `).join('') || '<tr><td colspan="9">Sin productos todavía.</td></tr>';
 
     tbody.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const product = products.find(p => p.id === Number(btn.dataset.edit));
         openModal('Editar producto', PRODUCT_FIELDS, product, async (values) => {
-          await api(`/admin/api/products/${product.id}`, { method: 'PUT', body: JSON.stringify(values) });
+          await api(`/admin/api/products/${product.id}`, { method: 'PUT', body: JSON.stringify(packSizesFromValues(values)) });
           loadProducts();
         });
       });
@@ -401,8 +433,8 @@ if (page === 'dashboard') {
   }
 
   document.getElementById('newProductBtn').addEventListener('click', () => {
-    openModal('Nuevo producto', PRODUCT_FIELDS, { active: true, category: 'Pantalones', stock: 0 }, async (values) => {
-      await api('/admin/api/products', { method: 'POST', body: JSON.stringify(values) });
+    openModal('Nuevo producto', PRODUCT_FIELDS, { active: true, category: 'Pantalones', audience: 'Unisex' }, async (values) => {
+      await api('/admin/api/products', { method: 'POST', body: JSON.stringify(packSizesFromValues(values)) });
       loadProducts();
     });
   });

@@ -26,22 +26,25 @@ router.post('/api/checkout/confirm', (req, res) => {
     const product = products.find(p => p.id === Number(item.id));
     if (!product) continue;
     const qty = Math.min(Math.max(Number(item.qty) || 0, 1), 20);
-    if (qty > product.stock) {
-      return res.status(409).json({ error: `Sin stock suficiente de "${product.name}" (disponible: ${product.stock})` });
+    const size = product.sizes.find(s => s.size === item.size) ? item.size : 'Única';
+    const sizeEntry = product.sizes.find(s => s.size === size);
+    if (!sizeEntry || qty > sizeEntry.stock) {
+      const label = size === 'Única' ? '' : ` (talla ${size})`;
+      return res.status(409).json({ error: `Sin stock suficiente de "${product.name}"${label} (disponible: ${sizeEntry ? sizeEntry.stock : 0})` });
     }
     const discount = db.getEffectiveDiscountForProduct(product);
     const unitPrice = discount ? Math.round(product.price * (1 - discount.percent / 100) * 100) / 100 : product.price;
     const amount = unitPrice * qty;
     total += amount;
-    lines.push({ productId: product.id, amount, qty });
+    lines.push({ productId: product.id, amount, qty, size });
   }
 
   if (!lines.length) return res.status(400).json({ error: 'Ningún producto válido en el carrito' });
 
   const orderId = typeof req.body.paypalOrderId === 'string' ? req.body.paypalOrderId.slice(0, 64) : null;
   lines.forEach(line => {
-    db.recordPurchase(line.productId, line.amount, { qty: line.qty, reference: orderId });
-    db.decrementStock(line.productId, line.qty);
+    db.recordPurchase(line.productId, line.amount, { qty: line.qty, reference: orderId, size: line.size });
+    db.decrementSizeStock(line.productId, line.size, line.qty);
   });
 
   res.json({ ok: true, total, orderId });
