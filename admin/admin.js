@@ -160,26 +160,15 @@ if (page === 'dashboard') {
   loadAnalytics();
 
   // ----- Product comparison -----
-  // Un color fijo por categoría (no por producto): así el mismo color se
-  // repite entre Pantalones, entre Poleras, etc., y categoría queda
-  // representada tanto en la tabla como en ambos gráficos.
-  const CATEGORY_COLORS = {
-    'Pantalones': '#2a78d6',
-    'Poleras': '#1baf7a',
-    'Accesorios': '#eb6834',
-    'Tecnología': '#4a3aa7'
-  };
-  const DEFAULT_CATEGORY_COLOR = '#8a8f98';
-  const categoryColor = (category) => CATEGORY_COLORS[category] || DEFAULT_CATEGORY_COLOR;
-
-  function renderCategoryLegend(products) {
-    const legend = document.getElementById('productCategoryLegend');
-    if (!legend) return;
-    const categories = [...new Set(products.map(p => p.category))];
-    legend.innerHTML = categories.map(cat => `
-      <span class="category-legend__item"><span class="category-dot" style="background:${categoryColor(cat)}"></span>${cat}</span>
-    `).join('');
-  }
+  // Un color distinto por producto (no por categoría): con productos de la
+  // misma categoría uno al lado del otro, compartir color los hacía verse
+  // como una sola barra. Paleta de 12 tonos validada (CVD-safe, ver skill
+  // de dataviz) — más que suficiente margen sobre los productos actuales.
+  const PRODUCT_COLORS = [
+    '#2a78d6', '#1baf7a', '#008300', '#eda100', '#eb6834', '#e34948',
+    '#e87ba4', '#4a3aa7', '#c98500', '#0d9488', '#65a30d', '#8a3ab2'
+  ];
+  const productColor = (index) => PRODUCT_COLORS[index % PRODUCT_COLORS.length];
 
   let productBarChart;
   let productPieChart;
@@ -190,7 +179,7 @@ if (page === 'dashboard') {
     const labels = products.map(p => p.name);
     const unitsData = products.map(p => p.unitsSold);
     const totalUnits = unitsData.reduce((sum, n) => sum + n, 0);
-    const colors = products.map(p => categoryColor(p.category));
+    const colors = products.map((p, i) => productColor(i));
 
     if (productBarChart) productBarChart.destroy();
     productBarChart = new Chart(barCtx, {
@@ -211,7 +200,7 @@ if (page === 'dashboard') {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          title: { display: true, text: 'Unidades vendidas por producto (color = categoría)', align: 'start', font: { size: 13 }, color: '#5b6670', padding: { bottom: 12 } }
+          title: { display: true, text: 'Unidades vendidas por producto', align: 'start', font: { size: 13 }, color: '#5b6670', padding: { bottom: 12 } }
         },
         scales: {
           x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } },
@@ -244,8 +233,6 @@ if (page === 'dashboard') {
         }
       }
     });
-
-    renderCategoryLegend(products);
   }
 
   async function loadProductPerformance() {
@@ -262,14 +249,15 @@ if (page === 'dashboard') {
     const topUnits = Math.max(0, ...products.map(p => p.unitsSold));
     let lastCategory = null;
     const tbody = document.querySelector('#productPerfTable tbody');
-    tbody.innerHTML = products.map(p => {
+    tbody.innerHTML = products.map((p, i) => {
       const groupHeader = p.category !== lastCategory
-        ? `<tr class="category-group-row"><td colspan="5"><span class="category-dot" style="background:${categoryColor(p.category)}"></span>${p.category}</td></tr>`
+        ? `<tr class="category-group-row"><td colspan="5">${p.category}</td></tr>`
         : '';
       lastCategory = p.category;
       return `${groupHeader}
         <tr>
           <td>
+            <span class="category-dot" style="background:${productColor(i)}"></span>
             ${p.name}
             ${p.active === false ? ' <span class="badge badge--off">Oculto</span>' : ''}
             ${topUnits > 0 && p.unitsSold === topUnits ? ' <span class="badge badge--on">Más vendido</span>' : ''}

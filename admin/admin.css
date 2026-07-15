@@ -188,9 +188,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 
 #productPerfTable { margin-top: 20px; }
 
 /* Product comparison charts */
-.category-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; }
-.category-legend__item { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--stone); font-weight: 600; }
-.category-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.category-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; margin-right: 8px; }
 
 .category-group-row td {
   padding-top: 18px;
