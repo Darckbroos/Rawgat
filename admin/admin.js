@@ -863,6 +863,46 @@ if (page === 'dashboard') {
       document.querySelector('#transactionsTable tbody').innerHTML = '<tr><td colspan="8">No se pudo cargar la información.</td></tr>';
     });
 
+  // ----- Backup / restore -----
+  document.getElementById('exportBackupBtn').addEventListener('click', async () => {
+    try {
+      const backup = await api('/admin/api/backup/export');
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rawgat-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'No se pudo generar el respaldo.');
+    }
+  });
+
+  document.getElementById('importBackupBtn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('importBackupFile');
+    const file = fileInput.files[0];
+    if (!file) {
+      alert('Elige primero un archivo de respaldo.');
+      return;
+    }
+    if (!confirm('Esto reemplaza todos los productos, descuentos, sucursales y movimientos actuales. ¿Continuar?')) return;
+
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      await api('/admin/api/backup/import', { method: 'POST', body: JSON.stringify(backup) });
+      alert('Respaldo restaurado correctamente.');
+      fileInput.value = '';
+      loadProducts();
+      loadDiscounts();
+      loadBranches().then(() => loadTransactions({ resetPage: true }));
+      loadProductPerformance();
+    } catch (err) {
+      alert(err.message || 'No se pudo restaurar el respaldo. Verifica que el archivo sea válido.');
+    }
+  });
+
   // Mantiene el resumen, la contabilidad y el stock al día sin recargar la
   // página. Se salta la actualización mientras hay un modal abierto para no
   // interrumpir una edición en curso.

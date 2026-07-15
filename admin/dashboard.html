@@ -24,6 +24,7 @@
       <button class="admin-nav__link" data-section="sucursales">Sucursales</button>
       <button class="admin-nav__link" data-section="productos">Productos</button>
       <button class="admin-nav__link" data-section="descuentos">Descuentos</button>
+      <button class="admin-nav__link" data-section="respaldo">Respaldo</button>
     </nav>
     <div class="admin-sidebar__footer">
       <span id="adminUsername">admin</span>
@@ -259,6 +260,28 @@
         </thead>
         <tbody></tbody>
       </table>
+    </section>
+
+    <!-- RESPALDO -->
+    <section class="admin-section" id="section-respaldo">
+      <header class="admin-section__head">
+        <h1>Respaldo de datos</h1>
+        <p>Productos, stock, descuentos, sucursales y contabilidad — sin la cuenta admin, que es propia de cada entorno. Útil para pasar los datos de este entorno a producción (o para tener un respaldo aparte).</p>
+      </header>
+
+      <div class="backup-grid">
+        <div class="backup-card">
+          <h3>Descargar respaldo</h3>
+          <p>Genera un archivo con todos los datos actuales.</p>
+          <button class="btn btn--primary btn--sm" id="exportBackupBtn">Descargar respaldo</button>
+        </div>
+        <div class="backup-card">
+          <h3>Restaurar respaldo</h3>
+          <p class="backup-card__warning">Reemplaza todos los productos, descuentos, sucursales y movimientos actuales por los del archivo. No se puede deshacer.</p>
+          <input type="file" id="importBackupFile" accept="application/json">
+          <button class="btn btn--danger btn--sm" id="importBackupBtn">Restaurar respaldo</button>
+        </div>
+      </div>
     </section>
 
   </main>

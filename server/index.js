@@ -11,6 +11,7 @@ const discountRoutes = require('./routes/discounts');
 const analyticsRoutes = require('./routes/analytics');
 const checkoutRoutes = require('./routes/checkout');
 const accountingRoutes = require('./routes/accounting');
+const backupRoutes = require('./routes/backup');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -43,7 +44,9 @@ app.use(helmet({
   hsts: isProd
 }));
 
-app.use(express.json({ limit: '100kb' }));
+// El límite se sube respecto al de otras rutas porque un respaldo con meses
+// de movimientos contables puede superar los 100kb por defecto.
+app.use(express.json({ limit: '5mb' }));
 
 app.use(session({
   name: 'rawgat.sid',
@@ -68,6 +71,7 @@ app.use(discountRoutes);
 app.use(analyticsRoutes);
 app.use(checkoutRoutes);
 app.use(accountingRoutes);
+app.use(backupRoutes);
 
 // Admin panel: login page is public, dashboard requires a valid session.
 // Clean URLs (no ".html") so the admin surface doesn't look like a bare static page.

@@ -647,6 +647,34 @@ function getAccountingSeries({ branchId, days = 30 } = {}) {
   return buckets;
 }
 
+// ---------- Backup / restore ----------
+// Todo lo que no sea la cuenta admin: así un respaldo se puede pasar de un
+// entorno a otro (dev -> producción) sin pisar la contraseña de ese entorno.
+const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', '_seq'];
+
+function exportData() {
+  const snapshot = {};
+  BACKUP_KEYS.forEach(key => { snapshot[key] = data[key]; });
+  return {
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    data: snapshot
+  };
+}
+
+function importData(backup) {
+  if (!backup || typeof backup !== 'object' || !backup.data || typeof backup.data !== 'object') {
+    return { error: 'Archivo de respaldo inválido' };
+  }
+  const missing = BACKUP_KEYS.filter(key => !(key in backup.data));
+  if (missing.length) {
+    return { error: `Faltan datos en el respaldo: ${missing.join(', ')}` };
+  }
+  BACKUP_KEYS.forEach(key => { data[key] = backup.data[key]; });
+  save();
+  return { ok: true };
+}
+
 module.exports = {
   getAdmin,
   getProducts, addProduct, updateProduct, deleteProduct, decrementStock,
@@ -655,5 +683,6 @@ module.exports = {
   getBranches, addBranch, updateBranch, deleteBranch,
   ACCOUNTING_CATEGORIES,
   getTransactions, addTransaction, updateTransaction, deleteTransaction,
-  getAccountingSummary, getAccountingSeries
+  getAccountingSummary, getAccountingSeries,
+  exportData, importData
 };
