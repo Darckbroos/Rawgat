@@ -199,7 +199,8 @@ function renderProducts(products) {
 
   grid.innerHTML = filtered.map((p, i) => {
     const discount = p.discount;
-    const priceHtml = discount
+    const locked = !!p.discountLocked;
+    const priceHtml = discount && !locked
       ? `<span class="price__original">${money(p.price)}</span> ${money(p.finalPrice)}`
       : money(p.price);
     const outOfStock = Number(p.stock) <= 0;
@@ -228,7 +229,8 @@ function renderProducts(products) {
           <span class="price">${priceHtml}</span>
           <button type="button" class="btn btn--sm btn--primary" data-add-to-cart="${p.id}" ${outOfStock ? 'disabled' : ''}>${outOfStock ? 'Agotado' : 'Agregar'}</button>
         </div>
-        ${discount ? `<p class="product-card__countdown">Código ${escapeHtml(discount.code)} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span></p>` : ''}
+        ${discount && !locked ? `<p class="product-card__countdown">Código ${escapeHtml(discount.code)} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span></p>` : ''}
+        ${locked ? `<p class="product-card__member-note">Precio socio ${money(p.memberPrice)} · <button type="button" data-open-account>Regístrate para acceder</button></p>` : ''}
       </div>
     </article>
   `;
@@ -295,10 +297,10 @@ fetch('/api/discounts/active')
     const code = escapeHtml(discount.code);
     const countdownSpan = `<span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span>`;
     if (topbar) {
-      topbar.innerHTML = `Usa el código <strong>${code}</strong> y llévate ${percent}% de descuento ${countdownSpan}`;
+      topbar.innerHTML = `Regístrate y usa el código <strong>${code}</strong> para llevarte ${percent}% de descuento ${countdownSpan}`;
     }
     if (heading) {
-      heading.innerHTML = `${percent}% de descuento con el código ${code} ${countdownSpan}`;
+      heading.innerHTML = `Regístrate y obtén ${percent}% de descuento con el código ${code} ${countdownSpan}`;
     }
     updateCountdowns();
   })
@@ -327,6 +329,7 @@ function saveCart() {
 }
 
 let cart = loadCart();
+let currentCustomer = null;
 
 const cartBtn = document.getElementById('cartBtn');
 const cartCount = document.getElementById('cartCount');
@@ -352,7 +355,15 @@ function findProduct(id) {
 }
 
 function unitPrice(product) {
-  return product.discount ? product.finalPrice : product.price;
+  const base = product.discount ? product.finalPrice : product.price;
+  if (currentCustomer && !currentCustomer.welcomeDiscountRedeemed) {
+    return Math.round(base * (1 - currentCustomer.welcomeDiscountPercent / 100) * 100) / 100;
+  }
+  return base;
+}
+
+function hasActiveWelcomeDiscount() {
+  return !!(currentCustomer && !currentCustomer.welcomeDiscountRedeemed);
 }
 
 // El carrito distingue por talla: dos tallas del mismo producto son líneas
@@ -409,6 +420,14 @@ function renderCart() {
 
   cartTotalEl.textContent = money(total);
   cartFooter.hidden = false;
+  const existingNote = cartFooter.querySelector('.cart-drawer__discount-note');
+  if (existingNote) existingNote.remove();
+  if (hasActiveWelcomeDiscount()) {
+    const note = document.createElement('p');
+    note.className = 'cart-drawer__demo-note cart-drawer__discount-note';
+    note.textContent = `Descuento de bienvenida del ${currentCustomer.welcomeDiscountPercent}% ya aplicado en estos precios.`;
+    cartFooter.insertBefore(note, cartFooter.firstChild);
+  }
   updateCartBadge();
   scheduleRenderPaypalButtons(total, keys);
 }
@@ -484,6 +503,12 @@ document.addEventListener('click', (e) => {
     const sizeSelect = card ? card.querySelector('[data-size-select]') : null;
     addToCart(addBtn.dataset.addToCart, sizeSelect ? sizeSelect.value : 'Única');
   }
+  if (e.target.closest('[data-open-account]')) {
+    accountError = '';
+    accountGuestTab = 'register';
+    renderAccountDrawer();
+    openAccount();
+  }
 });
 
 updateCartBadge();
@@ -542,6 +567,7 @@ function renderPaypalButtons(total, keys) {
           cartBody.innerHTML = '<p class="cart-drawer__empty">¡Gracias por tu compra! (pago de prueba, sin cobro real)</p>';
           cartFooter.hidden = true;
           updateCartBadge();
+          if (currentCustomer) fetchAccount();
         }),
       onError: (err) => {
         console.error('PayPal error', err);
@@ -550,3 +576,233 @@ function renderPaypalButtons(total, keys) {
     }).render('#paypalButtons');
   });
 }
+
+// ---------------- Customer account ----------------
+
+const accountBtn = document.getElementById('accountBtn');
+const accountNameEl = document.getElementById('accountName');
+const accountOverlay = document.getElementById('accountOverlay');
+const accountDrawer = document.getElementById('accountDrawer');
+const accountClose = document.getElementById('accountClose');
+const accountBody = document.getElementById('accountBody');
+
+let accountGuestTab = 'login';
+let accountError = '';
+let accountSuccess = '';
+
+function openAccount() {
+  accountDrawer.classList.add('is-open');
+  accountOverlay.classList.add('is-open');
+  accountDrawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeAccount() {
+  accountDrawer.classList.remove('is-open');
+  accountOverlay.classList.remove('is-open');
+  accountDrawer.setAttribute('aria-hidden', 'true');
+}
+
+function renderGuestView() {
+  const loginActive = accountGuestTab === 'login';
+  accountBody.innerHTML = `
+    <div class="account-tabs">
+      <button type="button" class="account-tab ${loginActive ? 'is-active' : ''}" data-account-tab="login">Iniciar sesión</button>
+      <button type="button" class="account-tab ${!loginActive ? 'is-active' : ''}" data-account-tab="register">Crear cuenta</button>
+    </div>
+    ${loginActive ? `
+      <form class="account-form" id="loginForm">
+        <label>Correo electrónico<input type="email" name="email" required autocomplete="email"></label>
+        <label>Contraseña<input type="password" name="password" required autocomplete="current-password"></label>
+        ${accountError ? `<p class="account-form__error">${escapeHtml(accountError)}</p>` : ''}
+        <button type="submit" class="btn btn--primary">Iniciar sesión</button>
+      </form>
+    ` : `
+      <form class="account-form" id="registerForm">
+        <label>Nombre<input type="text" name="name" required autocomplete="name"></label>
+        <label>Correo electrónico<input type="email" name="email" required autocomplete="email"></label>
+        <label>Contraseña<input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+        <p class="account-form__note">Regístrate y recibe <strong>10% de descuento</strong> en tu primera compra.</p>
+        ${accountError ? `<p class="account-form__error">${escapeHtml(accountError)}</p>` : ''}
+        <button type="submit" class="btn btn--primary">Crear cuenta</button>
+      </form>
+    `}
+  `;
+}
+
+function renderAccountView(orders) {
+  const discountBanner = hasActiveWelcomeDiscount()
+    ? `<div class="account-discount-banner">Tienes ${currentCustomer.welcomeDiscountPercent}% de descuento en tu primera compra. Se aplica automáticamente al pagar.</div>`
+    : '';
+
+  const ordersHtml = orders.length
+    ? orders.map(o => `
+      <div class="account-order">
+        <div class="account-order__info">
+          <strong>${escapeHtml(o.productName)}</strong>
+          <span>${new Date(o.createdAt).toLocaleDateString('es-ES')}${o.size && o.size !== 'Única' ? ` · Talla ${escapeHtml(o.size)}` : ''} · x${o.qty}</span>
+        </div>
+        <span class="account-order__amount">${money(o.amount)}</span>
+      </div>
+    `).join('')
+    : '<p class="cart-drawer__empty" style="margin-top:0">Todavía no tienes pedidos.</p>';
+
+  accountBody.innerHTML = `
+    <div class="account-welcome">
+      <p><strong>Hola, ${escapeHtml(currentCustomer.name)}</strong></p>
+      <p><span>${escapeHtml(currentCustomer.email)}</span></p>
+    </div>
+    ${discountBanner}
+    <form class="account-form" id="profileForm">
+      <label>Nombre<input type="text" name="name" value="${escapeHtml(currentCustomer.name)}" required></label>
+      <label>Teléfono<input type="tel" name="phone" value="${escapeHtml(currentCustomer.phone || '')}"></label>
+      <label>Dirección de envío<input type="text" name="address" value="${escapeHtml(currentCustomer.address || '')}"></label>
+      ${accountError ? `<p class="account-form__error">${escapeHtml(accountError)}</p>` : ''}
+      ${accountSuccess ? `<p class="account-form__success">${escapeHtml(accountSuccess)}</p>` : ''}
+      <button type="submit" class="btn btn--ghost btn--sm">Guardar cambios</button>
+    </form>
+    <div class="account-section">
+      <h4>Tus pedidos</h4>
+      ${ordersHtml}
+    </div>
+    <button type="button" class="btn btn--ghost btn--sm account-logout" id="accountLogoutBtn">Cerrar sesión</button>
+  `;
+}
+
+function renderAccountDrawer() {
+  if (!currentCustomer) {
+    renderGuestView();
+    return;
+  }
+  fetch('/api/account/orders')
+    .then(res => res.json())
+    .then(orders => renderAccountView(Array.isArray(orders) ? orders : []))
+    .catch(() => renderAccountView([]));
+}
+
+function updateAccountBadge() {
+  if (currentCustomer) {
+    accountNameEl.textContent = currentCustomer.name.trim().split(/\s+/)[0];
+    accountNameEl.hidden = false;
+    accountBtn.classList.add('has-name');
+  } else {
+    accountNameEl.hidden = true;
+    accountBtn.classList.remove('has-name');
+  }
+}
+
+function fetchAccount() {
+  return fetch('/api/account/me')
+    .then(res => res.json())
+    .then(data => {
+      currentCustomer = data.authenticated ? data.customer : null;
+      updateAccountBadge();
+      renderCart();
+      return currentCustomer;
+    })
+    .catch(() => null);
+}
+
+accountBtn.addEventListener('click', () => {
+  accountError = '';
+  accountSuccess = '';
+  renderAccountDrawer();
+  openAccount();
+});
+accountClose.addEventListener('click', closeAccount);
+accountOverlay.addEventListener('click', closeAccount);
+
+accountBody.addEventListener('click', (e) => {
+  const tab = e.target.closest('[data-account-tab]');
+  if (tab) {
+    accountGuestTab = tab.dataset.accountTab;
+    accountError = '';
+    renderGuestView();
+  }
+  if (e.target.id === 'accountLogoutBtn') {
+    fetch('/api/account/logout', { method: 'POST' })
+      .catch(() => {})
+      .then(() => {
+        currentCustomer = null;
+        updateAccountBadge();
+        accountGuestTab = 'login';
+        accountError = '';
+        accountSuccess = '';
+        renderCart();
+        renderAccountDrawer();
+      });
+  }
+});
+
+// Toda petición pasa por acá: si la red falla o el servidor devuelve algo
+// que no es JSON, antes quedaba como una promesa rechazada sin manejar y el
+// formulario no hacía nada visible (ni error ni éxito). Ahora siempre hay
+// una respuesta en pantalla, y el botón se bloquea mientras viaja el pedido
+// para que un doble clic no dispare la petición dos veces.
+function submitAccountForm(form, url, method, payload, onSuccess) {
+  const btn = form.querySelector('button[type="submit"]');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  return fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(res => res.json().catch(() => ({})).then(body => ({ ok: res.ok, body })))
+    .then(({ ok, body }) => {
+      if (!ok) {
+        accountError = body.error || 'No se pudo completar la operación';
+        return false;
+      }
+      accountError = '';
+      onSuccess(body);
+      return true;
+    })
+    .catch(() => {
+      accountError = 'No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.';
+      return false;
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    });
+}
+
+accountBody.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+
+  if (form.id === 'loginForm') {
+    submitAccountForm(form, '/api/account/login', 'POST', {
+      email: formData.get('email'), password: formData.get('password')
+    }, (body) => {
+      currentCustomer = body.customer;
+      updateAccountBadge();
+      renderCart();
+    }).then(ok => { if (!ok) renderGuestView(); else renderAccountDrawer(); });
+  }
+
+  if (form.id === 'registerForm') {
+    submitAccountForm(form, '/api/account/register', 'POST', {
+      name: formData.get('name'), email: formData.get('email'), password: formData.get('password')
+    }, (body) => {
+      currentCustomer = body.customer;
+      updateAccountBadge();
+      renderCart();
+    }).then(ok => { if (!ok) renderGuestView(); else renderAccountDrawer(); });
+  }
+
+  if (form.id === 'profileForm') {
+    submitAccountForm(form, '/api/account/me', 'PUT', {
+      name: formData.get('name'), phone: formData.get('phone'), address: formData.get('address')
+    }, (body) => {
+      currentCustomer = body.customer;
+      updateAccountBadge();
+      accountSuccess = 'Cambios guardados.';
+    }).then(() => renderAccountDrawer());
+  }
+});
+
+fetchAccount();

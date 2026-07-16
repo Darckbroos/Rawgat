@@ -68,9 +68,8 @@ function seedDemoPurchases() {
 }
 
 // Movimientos contables de ejemplo: los ingresos online replican las compras
-// demo ya generadas, y las sucursales físicas reciben ventas diarias más
-// arriendo/sueldos mensuales y algunos gastos operativos sueltos, para que
-// el módulo de contabilidad no arranque vacío.
+// demo ya generadas, para que el módulo de contabilidad no arranque vacío.
+// RAWGAT opera 100% online, por lo que no se generan sucursales físicas.
 function seedDemoTransactions(purchases, branches) {
   const transactions = [];
   let id = 1;
@@ -88,54 +87,6 @@ function seedDemoTransactions(purchases, branches) {
     createdAt: p.createdAt
   }));
 
-  const dayMs = 24 * 60 * 60 * 1000;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const physicalProfiles = [
-    { dailySale: [40, 150], rent: 900, payroll: 650 },
-    { dailySale: [25, 95], rent: 650, payroll: 500 }
-  ];
-
-  branches.filter(b => b.type === 'physical').forEach((branch, i) => {
-    const profile = physicalProfiles[i] || physicalProfiles[physicalProfiles.length - 1];
-    const [min, max] = profile.dailySale;
-
-    for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
-      const d = new Date(today.getTime() - daysAgo * dayMs);
-      const date = d.toISOString().slice(0, 10);
-
-      push({
-        branchId: branch.id,
-        type: 'income',
-        category: 'Ventas tienda',
-        description: 'Ventas del día',
-        amount: min + Math.floor(Math.random() * (max - min)),
-        method: 'efectivo',
-        date,
-        createdAt: d.toISOString()
-      });
-
-      if (Math.random() < 0.18) {
-        const category = ['Insumos y materiales', 'Servicios básicos', 'Marketing'][Math.floor(Math.random() * 3)];
-        push({
-          branchId: branch.id,
-          type: 'expense',
-          category,
-          description: category,
-          amount: 12 + Math.floor(Math.random() * 55),
-          method: 'transferencia',
-          date,
-          createdAt: d.toISOString()
-        });
-      }
-    }
-
-    const todayStr = today.toISOString().slice(0, 10);
-    push({ branchId: branch.id, type: 'expense', category: 'Arriendo', description: 'Arriendo del mes', amount: profile.rent, method: 'transferencia', date: todayStr, createdAt: today.toISOString() });
-    push({ branchId: branch.id, type: 'expense', category: 'Sueldos', description: 'Remuneraciones del mes', amount: profile.payroll, method: 'transferencia', date: todayStr, createdAt: today.toISOString() });
-  });
-
   return transactions;
 }
 
@@ -144,9 +95,7 @@ function buildDefaultData() {
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin1234';
   const purchases = seedDemoPurchases();
   const branches = [
-    { id: 1, name: 'RAWGAT Online', address: 'Tienda en línea', type: 'online', active: true, createdAt: new Date().toISOString() },
-    { id: 2, name: 'RAWGAT Providencia', address: 'Av. Providencia 1234, Santiago', type: 'physical', active: true, createdAt: new Date().toISOString() },
-    { id: 3, name: 'RAWGAT Bellavista', address: 'Pío Nono 567, Santiago', type: 'physical', active: true, createdAt: new Date().toISOString() }
+    { id: 1, name: 'RAWGAT Online', address: 'Tienda en línea', type: 'online', active: true, createdAt: new Date().toISOString() }
   ];
   const transactions = seedDemoTransactions(purchases, branches);
 
@@ -168,9 +117,10 @@ function buildDefaultData() {
     purchases,
     branches,
     transactions,
+    customers: [],
     _seq: {
       product: 5, discount: 2, visit: 1, purchase: purchases.length + 1,
-      branch: branches.length + 1, transaction: transactions.length + 1
+      branch: branches.length + 1, transaction: transactions.length + 1, customer: 1
     }
   };
 }
@@ -192,6 +142,7 @@ function load() {
     data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
     migrateAccountingData();
     migrateProductSizes();
+    migrateCustomers();
   }
   return data;
 }
@@ -236,6 +187,32 @@ function migrateAccountingData() {
     data._seq.transaction = data.transactions.reduce((max, t) => Math.max(max, t.id), 0) + 1;
     changed = true;
   }
+  data.transactions.forEach(t => {
+    if (t.bankReference === undefined) {
+      t.bankReference = t.reference || '';
+      delete t.reference;
+      changed = true;
+    }
+    if (t.invoiceNumber === undefined) {
+      t.invoiceNumber = '';
+      changed = true;
+    }
+  });
+  if (changed) save();
+}
+
+// Añade la tabla de clientes a bases de datos creadas antes de que existiera
+// el registro/login de usuarios, sin tocar el resto de los datos.
+function migrateCustomers() {
+  let changed = false;
+  if (!data.customers) {
+    data.customers = [];
+    changed = true;
+  }
+  if (!data._seq.customer) {
+    data._seq.customer = data.customers.reduce((max, c) => Math.max(max, c.id), 0) + 1;
+    changed = true;
+  }
   if (changed) save();
 }
 
@@ -248,6 +225,97 @@ load();
 // ---------- Admin ----------
 function getAdmin() {
   return data.admin;
+}
+
+// ---------- Customers ----------
+// Cuenta separada de la del admin: es la que usan los clientes en la tienda
+// para iniciar sesión, ver su historial y recibir el descuento de bienvenida.
+function sanitizeCustomer(customer) {
+  if (!customer) return null;
+  const { passwordHash, ...safe } = customer;
+  return safe;
+}
+
+function getCustomerByEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return data.customers.find(c => c.email === normalized) || null;
+}
+
+function getCustomerById(id) {
+  return data.customers.find(c => c.id === Number(id)) || null;
+}
+
+function createCustomer({ name, email, password }) {
+  if (getCustomerByEmail(email)) {
+    return { error: 'Ya existe una cuenta con ese correo' };
+  }
+  const customer = {
+    id: data._seq.customer++,
+    name: String(name || '').trim(),
+    email: String(email).trim().toLowerCase(),
+    passwordHash: bcrypt.hashSync(password, 10),
+    phone: '',
+    address: '',
+    welcomeDiscountPercent: 10,
+    welcomeDiscountRedeemed: false,
+    createdAt: new Date().toISOString()
+  };
+  data.customers.push(customer);
+  save();
+  return { customer };
+}
+
+function verifyCustomerLogin(email, password) {
+  const customer = getCustomerByEmail(email);
+  if (!customer) return null;
+  return bcrypt.compareSync(password, customer.passwordHash) ? customer : null;
+}
+
+function updateCustomerProfile(id, input) {
+  const customer = getCustomerById(id);
+  if (!customer) return null;
+  Object.assign(customer, {
+    name: input.name !== undefined ? String(input.name).trim() : customer.name,
+    phone: input.phone !== undefined ? String(input.phone).trim() : customer.phone,
+    address: input.address !== undefined ? String(input.address).trim() : customer.address
+  });
+  save();
+  return customer;
+}
+
+function redeemWelcomeDiscount(id) {
+  const customer = getCustomerById(id);
+  if (!customer || customer.welcomeDiscountRedeemed) return;
+  customer.welcomeDiscountRedeemed = true;
+  save();
+}
+
+function getCustomers() {
+  return data.customers.map(sanitizeCustomer).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function deleteCustomer(id) {
+  const before = data.customers.length;
+  data.customers = data.customers.filter(c => c.id !== Number(id));
+  save();
+  return data.customers.length < before;
+}
+
+function getCustomerOrders(customerId) {
+  return data.purchases
+    .filter(p => p.customerId === Number(customerId))
+    .map(p => {
+      const product = data.products.find(prod => prod.id === p.productId);
+      return {
+        id: p.id,
+        productName: product ? product.name : 'Producto eliminado',
+        size: p.size || null,
+        qty: p.qty,
+        amount: p.amount,
+        createdAt: p.createdAt
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 // ---------- Products ----------
@@ -429,8 +497,8 @@ function recordVisit(pagePath) {
   save();
 }
 
-function recordPurchase(productId, amount, { qty = 1, reference = null, size = null } = {}) {
-  const purchase = { id: data._seq.purchase++, productId: productId || null, qty: Number(qty) || 1, size, amount: Number(amount) || 0, createdAt: new Date().toISOString(), demo: false };
+function recordPurchase(productId, amount, { qty = 1, reference = null, size = null, customerId = null } = {}) {
+  const purchase = { id: data._seq.purchase++, productId: productId || null, qty: Number(qty) || 1, size, amount: Number(amount) || 0, customerId: customerId || null, createdAt: new Date().toISOString(), demo: false };
   data.purchases.push(purchase);
 
   const onlineBranch = data.branches.find(b => b.type === 'online');
@@ -445,7 +513,8 @@ function recordPurchase(productId, amount, { qty = 1, reference = null, size = n
       description: product ? `Venta en línea: ${product.name}${sizeLabel}` : 'Venta en línea (checkout)',
       amount: purchase.amount,
       method: 'paypal',
-      reference: reference || '',
+      invoiceNumber: '',
+      bankReference: reference || '',
       productId: productId || null,
       qty: purchase.qty,
       date: purchase.createdAt.slice(0, 10),
@@ -576,12 +645,16 @@ function updateBranch(id, input) {
   return branch;
 }
 
-function deleteBranch(id) {
+function deleteBranch(id, { cascade = false } = {}) {
   const branch = data.branches.find(b => b.id === Number(id));
   if (!branch) return { ok: false };
   if (branch.type === 'online') return { error: 'La sucursal en línea no se puede eliminar' };
-  if (data.transactions.some(t => t.branchId === branch.id)) {
-    return { error: 'Esta sucursal tiene movimientos contables asociados' };
+  const transactionCount = data.transactions.filter(t => t.branchId === branch.id).length;
+  if (transactionCount > 0 && !cascade) {
+    return { error: 'Esta sucursal tiene movimientos contables asociados', transactionCount };
+  }
+  if (cascade) {
+    data.transactions = data.transactions.filter(t => t.branchId !== branch.id);
   }
   data.branches = data.branches.filter(b => b.id !== branch.id);
   save();
@@ -615,7 +688,8 @@ function addTransaction(input) {
     description: input.description || '',
     amount: Math.abs(Number(input.amount)) || 0,
     method: input.method || 'transferencia',
-    reference: input.reference || '',
+    invoiceNumber: input.invoiceNumber || '',
+    bankReference: input.bankReference || '',
     date: input.date || new Date().toISOString().slice(0, 10),
     createdAt: new Date().toISOString(),
     demo: false
@@ -636,7 +710,8 @@ function updateTransaction(id, input) {
     description: input.description ?? transaction.description,
     amount: input.amount !== undefined ? (Math.abs(Number(input.amount)) || 0) : transaction.amount,
     method: input.method ?? transaction.method,
-    reference: input.reference ?? transaction.reference,
+    invoiceNumber: input.invoiceNumber ?? transaction.invoiceNumber,
+    bankReference: input.bankReference ?? transaction.bankReference,
     date: input.date ?? transaction.date
   });
   save();
@@ -704,7 +779,7 @@ function getAccountingSeries({ branchId, days = 30 } = {}) {
 // ---------- Backup / restore ----------
 // Todo lo que no sea la cuenta admin: así un respaldo se puede pasar de un
 // entorno a otro (dev -> producción) sin pisar la contraseña de ese entorno.
-const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', '_seq'];
+const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', 'customers', '_seq'];
 
 function exportData() {
   const snapshot = {};
@@ -716,21 +791,30 @@ function exportData() {
   };
 }
 
+// "customers" es opcional al importar: un respaldo generado antes de que
+// existieran las cuentas de cliente no debe rechazarse por eso.
+const OPTIONAL_BACKUP_KEYS = ['customers'];
+
 function importData(backup) {
   if (!backup || typeof backup !== 'object' || !backup.data || typeof backup.data !== 'object') {
     return { error: 'Archivo de respaldo inválido' };
   }
-  const missing = BACKUP_KEYS.filter(key => !(key in backup.data));
+  const missing = BACKUP_KEYS.filter(key => !OPTIONAL_BACKUP_KEYS.includes(key) && !(key in backup.data));
   if (missing.length) {
     return { error: `Faltan datos en el respaldo: ${missing.join(', ')}` };
   }
-  BACKUP_KEYS.forEach(key => { data[key] = backup.data[key]; });
+  BACKUP_KEYS.forEach(key => {
+    data[key] = key in backup.data ? backup.data[key] : (key === 'customers' ? [] : data[key]);
+  });
+  migrateCustomers();
   save();
   return { ok: true };
 }
 
 module.exports = {
   getAdmin,
+  sanitizeCustomer, getCustomerByEmail, getCustomerById, createCustomer, verifyCustomerLogin,
+  updateCustomerProfile, redeemWelcomeDiscount, getCustomerOrders, getCustomers, deleteCustomer,
   getProducts, addProduct, updateProduct, deleteProduct, decrementSizeStock,
   SIZES, AUDIENCES,
   getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,

@@ -21,8 +21,9 @@ router.put('/admin/api/branches/:id', requireAuth, (req, res) => {
 });
 
 router.delete('/admin/api/branches/:id', requireAuth, (req, res) => {
-  const result = db.deleteBranch(req.params.id);
-  if (result.error) return res.status(400).json({ error: result.error });
+  const cascade = req.query.cascade === 'true';
+  const result = db.deleteBranch(req.params.id, { cascade });
+  if (result.error) return res.status(400).json({ error: result.error, transactionCount: result.transactionCount });
   if (!result.ok) return res.status(404).json({ error: 'Sucursal no encontrada' });
   res.status(204).end();
 });

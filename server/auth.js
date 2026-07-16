@@ -3,29 +3,39 @@ const db = require('./db');
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
-const attemptsByIp = new Map();
 
-function isLockedOut(ip) {
-  const entry = attemptsByIp.get(ip);
-  if (!entry) return false;
-  if (entry.count < MAX_ATTEMPTS) return false;
-  if (Date.now() - entry.lastAttempt > LOCKOUT_MS) {
-    attemptsByIp.delete(ip);
-    return false;
+// Cada login (admin, cliente) tiene su propio contador por IP: un atacante
+// probando contraseñas de clientes no debe poder bloquear el acceso admin, ni viceversa.
+function createLoginLimiter() {
+  const attemptsByIp = new Map();
+
+  function isLockedOut(ip) {
+    const entry = attemptsByIp.get(ip);
+    if (!entry) return false;
+    if (entry.count < MAX_ATTEMPTS) return false;
+    if (Date.now() - entry.lastAttempt > LOCKOUT_MS) {
+      attemptsByIp.delete(ip);
+      return false;
+    }
+    return true;
   }
-  return true;
+
+  function registerFailedAttempt(ip) {
+    const entry = attemptsByIp.get(ip) || { count: 0, lastAttempt: 0 };
+    entry.count++;
+    entry.lastAttempt = Date.now();
+    attemptsByIp.set(ip, entry);
+  }
+
+  function clearAttempts(ip) {
+    attemptsByIp.delete(ip);
+  }
+
+  return { isLockedOut, registerFailedAttempt, clearAttempts };
 }
 
-function registerFailedAttempt(ip) {
-  const entry = attemptsByIp.get(ip) || { count: 0, lastAttempt: 0 };
-  entry.count++;
-  entry.lastAttempt = Date.now();
-  attemptsByIp.set(ip, entry);
-}
-
-function clearAttempts(ip) {
-  attemptsByIp.delete(ip);
-}
+const adminLimiter = createLoginLimiter();
+const customerLimiter = createLoginLimiter();
 
 function verifyLogin(username, password) {
   const admin = db.getAdmin();
@@ -43,4 +53,19 @@ function requireAuthPage(req, res, next) {
   return res.redirect('/admin/login');
 }
 
-module.exports = { isLockedOut, registerFailedAttempt, clearAttempts, verifyLogin, requireAuth, requireAuthPage, LOCKOUT_MS };
+function requireCustomerAuth(req, res, next) {
+  if (req.session && req.session.customerId) return next();
+  return res.status(401).json({ error: 'Debes iniciar sesión' });
+}
+
+module.exports = {
+  isLockedOut: adminLimiter.isLockedOut,
+  registerFailedAttempt: adminLimiter.registerFailedAttempt,
+  clearAttempts: adminLimiter.clearAttempts,
+  customerLimiter,
+  verifyLogin,
+  requireAuth,
+  requireAuthPage,
+  requireCustomerAuth,
+  LOCKOUT_MS
+};

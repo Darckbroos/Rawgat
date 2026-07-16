@@ -21,6 +21,7 @@
     <nav class="admin-nav">
       <button class="admin-nav__link is-active" data-section="resumen">Resumen</button>
       <button class="admin-nav__link" data-section="contabilidad">Contabilidad</button>
+      <button class="admin-nav__link" data-section="clientes">Clientes</button>
       <button class="admin-nav__link" data-section="sucursales">Sucursales</button>
       <button class="admin-nav__link" data-section="productos">Productos</button>
       <button class="admin-nav__link" data-section="descuentos">Descuentos</button>
@@ -123,6 +124,7 @@
             <option value="90">Últimos 90 días</option>
           </select>
         </label>
+        <button class="btn btn--ghost btn--sm" id="newExpenseBtn">+ Nuevo gasto</button>
         <button class="btn btn--primary btn--sm" id="newTransactionBtn">+ Nuevo movimiento</button>
       </div>
 
@@ -182,7 +184,7 @@
       </div>
       <table class="admin-table" id="transactionsTable">
         <thead>
-          <tr><th>Fecha</th><th>Sucursal</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>N° operación</th><th></th></tr>
+          <tr><th>Fecha</th><th>Sucursal</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>N° factura</th><th>N° transacción bancaria</th><th></th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -193,6 +195,21 @@
           <button type="button" class="btn btn--ghost btn--sm" id="transactionsNextBtn">Siguiente</button>
         </div>
       </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section class="admin-section" id="section-clientes">
+      <header class="admin-section__head">
+        <h1>Clientes</h1>
+        <p>Cuentas registradas en la tienda. El descuento de bienvenida se aplica una sola vez, en la primera compra.</p>
+      </header>
+
+      <table class="admin-table" id="customersTable">
+        <thead>
+          <tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Dirección</th><th>Registrado</th><th>Descuento bienvenida</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <!-- SUCURSALES -->

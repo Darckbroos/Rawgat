@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAWGAT — Instinto de cumbre, disciplina de acero</title>
+<title>RAWGAT — Nace la potencia, nace RAWGAT</title>
 <meta name="description" content="RAWGAT es la mentalidad del gato crudo: resistencia, libertad y disciplina para escaladores que buscan llegar donde otros no llegan.">
 <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +32,10 @@
 
     <div class="header__actions">
       <a href="#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
+      <button class="account-btn" id="accountBtn" aria-label="Mi cuenta">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="account-btn__name" id="accountName" hidden></span>
+      </button>
       <button class="cart-btn" id="cartBtn" aria-label="Ver carrito">
         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
         <span class="cart-btn__count" id="cartCount" hidden>0</span>
@@ -62,8 +66,8 @@
 
     <div class="container hero__content">
       <p class="eyebrow">La mentalidad del gato crudo</p>
-      <h1>Instinto de cumbre.<br>Disciplina de acero.</h1>
-      <p class="hero__lead">RAWGAT no es solo ropa de escalada: es la resistencia del felino salvaje y la templanza de la montaña, hechas prenda para quienes buscan llegar donde otros no llegan.</p>
+      <h1>Nace la potencia,<br>nace RAWGAT.</h1>
+      <p class="hero__lead">RAWGAT es el poder interior de quien se supera a sí mismo. Es sentirte parte de una élite capaz de hazañas de alto riesgo, donde tus hábitos, tu forma de pensar y todo tu entorno están alineados con la pasión que te hace arriesgarlo todo por la montaña.</p>
       <div class="hero__cta">
         <a href="#coleccion" class="btn btn--primary">Ver colección</a>
         <a href="#tecnologia" class="btn btn--ghost">Conoce la tecnología</a>
@@ -254,9 +258,19 @@
   </div>
   <div class="container footer__bottom">
     <span>© 2026 RAWGAT. Todos los derechos reservados.</span>
+    <span class="footer__legal-links"><a href="privacidad.html">Política de privacidad</a> · <a href="terminos.html">Términos y condiciones</a></span>
     <span>Hecho en Chile para escaladores de todo el mundo.</span>
   </div>
 </footer>
+
+<div class="account-overlay" id="accountOverlay"></div>
+<aside class="account-drawer" id="accountDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Mi cuenta</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Cerrar cuenta">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="accountBody"></div>
+</aside>
 
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">

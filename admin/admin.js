@@ -615,13 +615,58 @@ if (page === 'dashboard') {
           await api(`/admin/api/branches/${btn.dataset.delete}`, { method: 'DELETE' });
           await loadBranches();
         } catch (err) {
-          alert(err.message);
+          if (err.message === 'Esta sucursal tiene movimientos contables asociados') {
+            const alsoDelete = confirm('Esta sucursal tiene movimientos contables asociados. ¿Eliminar la sucursal Y todos sus movimientos contables? Esta acción no se puede deshacer.');
+            if (!alsoDelete) return;
+            try {
+              await api(`/admin/api/branches/${btn.dataset.delete}?cascade=true`, { method: 'DELETE' });
+              await loadBranches();
+            } catch (err2) {
+              alert(err2.message);
+            }
+          } else {
+            alert(err.message);
+          }
         }
       });
     });
 
     populateBranchFilter();
   }
+
+  // ----- Customers -----
+  async function loadCustomers() {
+    let customers;
+    try {
+      customers = await api('/admin/api/customers');
+    } catch (err) {
+      console.error('No se pudieron cargar los clientes', err);
+      document.querySelector('#customersTable tbody').innerHTML = '<tr><td colspan="7">No se pudo cargar la información.</td></tr>';
+      return;
+    }
+    const tbody = document.querySelector('#customersTable tbody');
+    tbody.innerHTML = customers.map(c => `
+      <tr data-id="${c.id}">
+        <td>${c.name}</td>
+        <td>${c.email}</td>
+        <td>${c.phone || '—'}</td>
+        <td>${c.address || '—'}</td>
+        <td>${new Date(c.createdAt).toLocaleDateString('es-ES')}</td>
+        <td><span class="badge ${c.welcomeDiscountRedeemed ? 'badge--off' : 'badge--on'}">${c.welcomeDiscountRedeemed ? 'Usado' : `${c.welcomeDiscountPercent}% disponible`}</span></td>
+        <td class="actions"><button class="btn btn--danger btn--sm" data-delete="${c.id}">Eliminar</button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="7">Todavía no hay clientes registrados.</td></tr>';
+
+    tbody.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar esta cuenta de cliente? Esta acción no se puede deshacer.')) return;
+        await api(`/admin/api/customers/${btn.dataset.delete}`, { method: 'DELETE' });
+        loadCustomers();
+      });
+    });
+  }
+
+  loadCustomers();
 
   document.getElementById('newBranchBtn').addEventListener('click', () => {
     openModal('Nueva sucursal', BRANCH_FIELDS, { active: true }, async (values) => {
@@ -649,7 +694,8 @@ if (page === 'dashboard') {
         options: ['efectivo', 'transferencia', 'tarjeta', 'paypal'],
         optionLabels: { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta', paypal: 'PayPal' }
       },
-      { name: 'reference', label: 'N° de operación bancaria (opcional)', type: 'text' },
+      { name: 'invoiceNumber', label: 'N° de factura (opcional)', type: 'text' },
+      { name: 'bankReference', label: 'N° de transacción bancaria (opcional)', type: 'text' },
       { name: 'date', label: 'Fecha', type: 'date', required: true }
     ];
   }
@@ -708,13 +754,14 @@ if (page === 'dashboard') {
         <td>${t.category}</td>
         <td>${t.description || '—'}</td>
         <td class="${t.type === 'income' ? 'stat-card--income' : 'stat-card--expense'}">${t.type === 'income' ? '+' : '−'} ${money(t.amount)}</td>
-        <td>${t.reference || '—'}</td>
+        <td>${t.invoiceNumber || '—'}</td>
+        <td>${t.bankReference || '—'}</td>
         <td class="actions">
           <button class="btn btn--ghost btn--sm" data-edit="${t.id}">Editar</button>
           <button class="btn btn--danger btn--sm" data-delete="${t.id}">Eliminar</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="8">Sin movimientos en este período.</td></tr>';
+    `).join('') || '<tr><td colspan="9">Sin movimientos en este período.</td></tr>';
 
     tbody.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -838,7 +885,7 @@ if (page === 'dashboard') {
       ]);
     } catch (err) {
       console.error('No se pudo cargar la contabilidad', err);
-      document.querySelector('#transactionsTable tbody').innerHTML = '<tr><td colspan="8">No se pudo cargar la información.</td></tr>';
+      document.querySelector('#transactionsTable tbody').innerHTML = '<tr><td colspan="9">No se pudo cargar la información.</td></tr>';
       document.getElementById('transactionsPagerInfo').textContent = 'Error al cargar.';
       return;
     }
@@ -881,6 +928,18 @@ if (page === 'dashboard') {
     }, (fields, initialValues) => wireTransactionTypeField(fields, initialValues));
   });
 
+  document.getElementById('newExpenseBtn').addEventListener('click', () => {
+    openModal('Nuevo gasto', transactionFields(), {
+      type: 'expense',
+      branchId: branchesCache[0] ? String(branchesCache[0].id) : '',
+      method: 'transferencia',
+      date: new Date().toISOString().slice(0, 10)
+    }, async (values) => {
+      await api('/admin/api/transactions', { method: 'POST', body: JSON.stringify({ ...values, type: 'expense' }) });
+      loadTransactions({ resetPage: true });
+    }, (fields, initialValues) => wireTransactionTypeField(fields, initialValues));
+  });
+
   document.getElementById('acctBranchFilter').addEventListener('change', () => loadTransactions({ resetPage: true }));
   document.getElementById('acctDaysFilter').addEventListener('change', () => loadTransactions({ resetPage: true }));
 
@@ -891,9 +950,9 @@ if (page === 'dashboard') {
     const transactions = await api(`/admin/api/transactions?${params}`);
     const branchById = Object.fromEntries(branchesCache.map(b => [b.id, b.name]));
 
-    const rows = [['Fecha', 'Sucursal', 'Tipo', 'Categoría', 'Descripción', 'Monto', 'N° operación']];
+    const rows = [['Fecha', 'Sucursal', 'Tipo', 'Categoría', 'Descripción', 'Monto', 'N° factura', 'N° transacción bancaria']];
     transactions.forEach(t => rows.push([
-      t.date, branchById[t.branchId] || '', t.type === 'income' ? 'Ingreso' : 'Gasto', t.category, t.description || '', t.amount, t.reference || ''
+      t.date, branchById[t.branchId] || '', t.type === 'income' ? 'Ingreso' : 'Gasto', t.category, t.description || '', t.amount, t.invoiceNumber || '', t.bankReference || ''
     ]));
     const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -913,7 +972,7 @@ if (page === 'dashboard') {
     })
     .catch(err => {
       console.error('No se pudo cargar la contabilidad', err);
-      document.querySelector('#transactionsTable tbody').innerHTML = '<tr><td colspan="8">No se pudo cargar la información.</td></tr>';
+      document.querySelector('#transactionsTable tbody').innerHTML = '<tr><td colspan="9">No se pudo cargar la información.</td></tr>';
     });
 
   // ----- Backup / restore -----

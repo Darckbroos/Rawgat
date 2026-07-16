@@ -62,9 +62,14 @@ router.delete('/admin/api/products/:id', requireAuth, (req, res) => {
 
 // Public read-only: incluye el descuento vigente (todo el sitio, categoría o
 // producto específico) y el precio final ya calculado para cada producto.
+// Los descuentos son solo para clientes registrados: quien no inició sesión
+// ve la etiqueta y el precio rebajado como vitrina ("discountLocked"), pero
+// el precio que paga (acá y en el checkout) es siempre el de lista.
 router.get('/api/products', (req, res) => {
+  const isLoggedIn = !!(req.session && req.session.customerId);
   const products = db.getProducts({ onlyActive: true }).map(p => {
     const discount = db.getEffectiveDiscountForProduct(p);
+    const finalPrice = discount ? Math.round(p.price * (1 - discount.percent / 100) * 100) / 100 : p.price;
     return {
       ...p,
       discount: discount ? {
@@ -73,7 +78,9 @@ router.get('/api/products', (req, res) => {
         expiresAt: discount.expiresAt,
         scope: discount.scope || 'all'
       } : null,
-      finalPrice: discount ? Math.round(p.price * (1 - discount.percent / 100) * 100) / 100 : p.price
+      finalPrice: isLoggedIn ? finalPrice : p.price,
+      memberPrice: discount ? finalPrice : null,
+      discountLocked: !!discount && !isLoggedIn
     };
   });
   res.json(products);

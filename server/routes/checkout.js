@@ -19,6 +19,10 @@ router.post('/api/checkout/confirm', (req, res) => {
   const items = Array.isArray(req.body.items) ? req.body.items : [];
   const products = db.getProducts({ onlyActive: true });
 
+  const customerId = req.session && req.session.customerId ? req.session.customerId : null;
+  const customer = customerId ? db.getCustomerById(customerId) : null;
+  const welcomeDiscountPercent = customer && !customer.welcomeDiscountRedeemed ? customer.welcomeDiscountPercent : 0;
+
   let total = 0;
   const lines = [];
 
@@ -32,8 +36,13 @@ router.post('/api/checkout/confirm', (req, res) => {
       const label = size === 'Única' ? '' : ` (talla ${size})`;
       return res.status(409).json({ error: `Sin stock suficiente de "${product.name}"${label} (disponible: ${sizeEntry ? sizeEntry.stock : 0})` });
     }
-    const discount = db.getEffectiveDiscountForProduct(product);
-    const unitPrice = discount ? Math.round(product.price * (1 - discount.percent / 100) * 100) / 100 : product.price;
+    // Los descuentos (de admin y de bienvenida) son un beneficio exclusivo de
+    // clientes registrados; sin sesión iniciada siempre se cobra precio de lista.
+    const discount = customerId ? db.getEffectiveDiscountForProduct(product) : null;
+    let unitPrice = discount ? Math.round(product.price * (1 - discount.percent / 100) * 100) / 100 : product.price;
+    if (welcomeDiscountPercent) {
+      unitPrice = Math.round(unitPrice * (1 - welcomeDiscountPercent / 100) * 100) / 100;
+    }
     const amount = unitPrice * qty;
     total += amount;
     lines.push({ productId: product.id, amount, qty, size });
@@ -43,9 +52,10 @@ router.post('/api/checkout/confirm', (req, res) => {
 
   const orderId = typeof req.body.paypalOrderId === 'string' ? req.body.paypalOrderId.slice(0, 64) : null;
   lines.forEach(line => {
-    db.recordPurchase(line.productId, line.amount, { qty: line.qty, reference: orderId, size: line.size });
+    db.recordPurchase(line.productId, line.amount, { qty: line.qty, reference: orderId, size: line.size, customerId });
     db.decrementSizeStock(line.productId, line.size, line.qty);
   });
+  if (welcomeDiscountPercent) db.redeemWelcomeDiscount(customerId);
 
   res.json({ ok: true, total, orderId });
 });

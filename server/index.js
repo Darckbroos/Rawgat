@@ -6,6 +6,7 @@ const helmet = require('helmet');
 
 const auth = require('./auth');
 const sessionRoutes = require('./routes/session');
+const customerRoutes = require('./routes/customers');
 const productRoutes = require('./routes/products');
 const discountRoutes = require('./routes/discounts');
 const analyticsRoutes = require('./routes/analytics');
@@ -66,6 +67,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API routes (public + protected, guarded internally with requireAuth)
 app.use(sessionRoutes);
+app.use(customerRoutes);
 app.use(productRoutes);
 app.use(discountRoutes);
 app.use(analyticsRoutes);
