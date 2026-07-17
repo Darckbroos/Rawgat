@@ -118,9 +118,13 @@ function buildDefaultData() {
     branches,
     transactions,
     customers: [],
+    reviews: [
+      { id: 1, productId: 1, customerName: 'Javiera M.', rating: 5, text: 'El pantalón Gastón aguantó tres días seguidos de fisuras en Cochamó sin una sola marca. Se mueve como una segunda piel.', createdAt: new Date().toISOString() },
+      { id: 2, productId: 2, customerName: 'Camila S.', rating: 5, text: 'Compré el polerón para el invierno en el muro y ahora es lo único que uso también para trekking. Calidad brutal.', createdAt: new Date().toISOString() }
+    ],
     _seq: {
       product: 5, discount: 2, visit: 1, purchase: purchases.length + 1,
-      branch: branches.length + 1, transaction: transactions.length + 1, customer: 1
+      branch: branches.length + 1, transaction: transactions.length + 1, customer: 1, review: 3
     }
   };
 }
@@ -143,6 +147,7 @@ function load() {
     migrateAccountingData();
     migrateProductSizes();
     migrateCustomers();
+    migrateReviews();
   }
   return data;
 }
@@ -211,6 +216,21 @@ function migrateCustomers() {
   }
   if (!data._seq.customer) {
     data._seq.customer = data.customers.reduce((max, c) => Math.max(max, c.id), 0) + 1;
+    changed = true;
+  }
+  if (changed) save();
+}
+
+// Añade la tabla de reseñas a bases de datos creadas antes de que existiera
+// este módulo, sin tocar el resto de los datos.
+function migrateReviews() {
+  let changed = false;
+  if (!data.reviews) {
+    data.reviews = [];
+    changed = true;
+  }
+  if (!data._seq.review) {
+    data._seq.review = data.reviews.reduce((max, r) => Math.max(max, r.id), 0) + 1;
     changed = true;
   }
   if (changed) save();
@@ -385,6 +405,56 @@ function deleteProduct(id) {
   data.products = data.products.filter(p => p.id !== Number(id));
   save();
   return data.products.length < before;
+}
+
+// ---------- Reviews ----------
+// Se cargan a mano desde el admin (clientes reales que ya compraron) —
+// todavía no hay formulario público de reseñas.
+function getReviews(productId) {
+  return data.reviews
+    .filter(r => r.productId === Number(productId))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function getAllReviews() {
+  const productById = Object.fromEntries(data.products.map(p => [p.id, p.name]));
+  return data.reviews
+    .map(r => ({ ...r, productName: productById[r.productId] || 'Producto eliminado' }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function addReview(input) {
+  const review = {
+    id: data._seq.review++,
+    productId: Number(input.productId),
+    customerName: String(input.customerName || '').trim(),
+    rating: Math.min(5, Math.max(1, Math.round(Number(input.rating)) || 5)),
+    text: String(input.text || '').trim(),
+    createdAt: input.createdAt || new Date().toISOString()
+  };
+  data.reviews.push(review);
+  save();
+  return review;
+}
+
+function updateReview(id, input) {
+  const review = data.reviews.find(r => r.id === Number(id));
+  if (!review) return null;
+  Object.assign(review, {
+    productId: input.productId !== undefined ? Number(input.productId) : review.productId,
+    customerName: input.customerName !== undefined ? String(input.customerName).trim() : review.customerName,
+    rating: input.rating !== undefined ? Math.min(5, Math.max(1, Math.round(Number(input.rating)) || 5)) : review.rating,
+    text: input.text !== undefined ? String(input.text).trim() : review.text
+  });
+  save();
+  return review;
+}
+
+function deleteReview(id) {
+  const before = data.reviews.length;
+  data.reviews = data.reviews.filter(r => r.id !== Number(id));
+  save();
+  return data.reviews.length < before;
 }
 
 // ---------- Discounts ----------
@@ -779,7 +849,7 @@ function getAccountingSeries({ branchId, days = 30 } = {}) {
 // ---------- Backup / restore ----------
 // Todo lo que no sea la cuenta admin: así un respaldo se puede pasar de un
 // entorno a otro (dev -> producción) sin pisar la contraseña de ese entorno.
-const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', 'customers', '_seq'];
+const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', 'customers', 'reviews', '_seq'];
 
 function exportData() {
   const snapshot = {};
@@ -791,9 +861,9 @@ function exportData() {
   };
 }
 
-// "customers" es opcional al importar: un respaldo generado antes de que
-// existieran las cuentas de cliente no debe rechazarse por eso.
-const OPTIONAL_BACKUP_KEYS = ['customers'];
+// "customers"/"reviews" son opcionales al importar: un respaldo generado
+// antes de que existieran esos módulos no debe rechazarse por eso.
+const OPTIONAL_BACKUP_KEYS = ['customers', 'reviews'];
 
 function importData(backup) {
   if (!backup || typeof backup !== 'object' || !backup.data || typeof backup.data !== 'object') {
@@ -804,9 +874,10 @@ function importData(backup) {
     return { error: `Faltan datos en el respaldo: ${missing.join(', ')}` };
   }
   BACKUP_KEYS.forEach(key => {
-    data[key] = key in backup.data ? backup.data[key] : (key === 'customers' ? [] : data[key]);
+    data[key] = key in backup.data ? backup.data[key] : (OPTIONAL_BACKUP_KEYS.includes(key) ? [] : data[key]);
   });
   migrateCustomers();
+  migrateReviews();
   save();
   return { ok: true };
 }
@@ -816,6 +887,7 @@ module.exports = {
   sanitizeCustomer, getCustomerByEmail, getCustomerById, createCustomer, verifyCustomerLogin,
   updateCustomerProfile, redeemWelcomeDiscount, getCustomerOrders, getCustomers, deleteCustomer,
   getProducts, addProduct, updateProduct, deleteProduct, decrementSizeStock,
+  getReviews, getAllReviews, addReview, updateReview, deleteReview,
   SIZES, AUDIENCES,
   getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,
   recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getProductPerformance, getSummary,

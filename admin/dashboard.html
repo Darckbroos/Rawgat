@@ -22,6 +22,7 @@
       <button class="admin-nav__link is-active" data-section="resumen">Resumen</button>
       <button class="admin-nav__link" data-section="contabilidad">Contabilidad</button>
       <button class="admin-nav__link" data-section="clientes">Clientes</button>
+      <button class="admin-nav__link" data-section="resenas">Reseñas</button>
       <button class="admin-nav__link" data-section="sucursales">Sucursales</button>
       <button class="admin-nav__link" data-section="productos">Productos</button>
       <button class="admin-nav__link" data-section="descuentos">Descuentos</button>
@@ -207,6 +208,23 @@
       <table class="admin-table" id="customersTable">
         <thead>
           <tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Dirección</th><th>Registrado</th><th>Descuento bienvenida</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- RESEÑAS -->
+    <section class="admin-section" id="section-resenas">
+      <header class="admin-section__head">
+        <h1>Reseñas</h1>
+        <p>Se cargan a mano desde clientes reales que ya compraron. Aparecen en la ficha del producto correspondiente.</p>
+      </header>
+
+      <button class="btn btn--primary btn--sm" id="newReviewBtn">+ Nueva reseña</button>
+
+      <table class="admin-table" id="reviewsTable">
+        <thead>
+          <tr><th>Producto</th><th>Cliente</th><th>Valoración</th><th>Reseña</th><th>Fecha</th><th></th></tr>
         </thead>
         <tbody></tbody>
       </table>

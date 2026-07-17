@@ -668,6 +668,74 @@ if (page === 'dashboard') {
 
   loadCustomers();
 
+  // ----- Reviews -----
+  function reviewFields(products) {
+    return [
+      {
+        name: 'productId', label: 'Producto', type: 'select',
+        options: products.map(p => String(p.id)),
+        optionLabels: Object.fromEntries(products.map(p => [String(p.id), p.name]))
+      },
+      { name: 'customerName', label: 'Nombre del cliente', type: 'text', required: true },
+      { name: 'rating', label: 'Valoración (1 a 5)', type: 'number', step: '1', required: true },
+      { name: 'text', label: 'Reseña', type: 'textarea', required: true }
+    ];
+  }
+
+  async function loadReviews() {
+    let reviews;
+    try {
+      reviews = await api('/admin/api/reviews');
+    } catch (err) {
+      console.error('No se pudieron cargar las reseñas', err);
+      document.querySelector('#reviewsTable tbody').innerHTML = '<tr><td colspan="6">No se pudo cargar la información.</td></tr>';
+      return;
+    }
+    const tbody = document.querySelector('#reviewsTable tbody');
+    tbody.innerHTML = reviews.map(r => `
+      <tr data-id="${r.id}">
+        <td>${r.productName}</td>
+        <td>${r.customerName}</td>
+        <td>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+        <td>${r.text.length > 80 ? `${r.text.slice(0, 80)}…` : r.text}</td>
+        <td>${new Date(r.createdAt).toLocaleDateString('es-ES')}</td>
+        <td class="actions">
+          <button class="btn btn--ghost btn--sm" data-edit="${r.id}">Editar</button>
+          <button class="btn btn--danger btn--sm" data-delete="${r.id}">Eliminar</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6">Sin reseñas todavía.</td></tr>';
+
+    tbody.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const review = reviews.find(r => r.id === Number(btn.dataset.edit));
+        const products = await api('/admin/api/products');
+        openModal('Editar reseña', reviewFields(products), { ...review, productId: String(review.productId) }, async (values) => {
+          await api(`/admin/api/reviews/${review.id}`, { method: 'PUT', body: JSON.stringify(values) });
+          loadReviews();
+        });
+      });
+    });
+    tbody.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar esta reseña?')) return;
+        await api(`/admin/api/reviews/${btn.dataset.delete}`, { method: 'DELETE' });
+        loadReviews();
+      });
+    });
+  }
+
+  document.getElementById('newReviewBtn').addEventListener('click', async () => {
+    const products = await api('/admin/api/products');
+    if (!products.length) { alert('Primero necesitas al menos un producto creado.'); return; }
+    openModal('Nueva reseña', reviewFields(products), { productId: String(products[0].id), rating: 5 }, async (values) => {
+      await api('/admin/api/reviews', { method: 'POST', body: JSON.stringify(values) });
+      loadReviews();
+    });
+  });
+
+  loadReviews();
+
   document.getElementById('newBranchBtn').addEventListener('click', () => {
     openModal('Nueva sucursal', BRANCH_FIELDS, { active: true }, async (values) => {
       await api('/admin/api/branches', { method: 'POST', body: JSON.stringify(values) });

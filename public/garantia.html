@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garantía RAWGAT — 5 años en costuras</title>
+<meta name="description" content="La garantía RAWGAT: 5 años en costuras, 30 días de prueba en la roca y cómo reclamarla paso a paso.">
+<link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar" id="topbar">Envío gratis en Europa por compras sobre 60€ · Devoluciones dentro de 30 días</div>
+
+<header class="header" id="header">
+  <div class="container header__inner">
+    <a href="/index.html#inicio" class="brand">
+      <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
+      <span class="brand__name">RAWGAT</span>
+    </a>
+
+    <nav class="nav" id="nav">
+      <a href="/index.html#coleccion">Colección</a>
+      <a href="/index.html?audiencia=Hombre#coleccion">Hombre</a>
+      <a href="/index.html?audiencia=Mujer#coleccion">Mujer</a>
+      <a href="/index.html?audiencia=Niños#coleccion">Niños</a>
+      <a href="/index.html?categoria=Accesorios#coleccion">Accesorios</a>
+      <a href="/index.html?rebajas=1#coleccion" class="nav__sale">Rebajas</a>
+    </nav>
+
+    <div class="header__actions">
+      <a href="/index.html#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
+      <button class="search-btn" id="searchBtn" aria-label="Buscar productos">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="account-btn" id="accountBtn" aria-label="Mi cuenta">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="account-btn__name" id="accountName" hidden></span>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="Ver carrito">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
+        <span class="cart-btn__count" id="cartCount" hidden>0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="search-overlay" id="searchOverlay"></div>
+<div class="search-panel" id="searchPanel" aria-hidden="true">
+  <div class="container search-panel__inner">
+    <form class="search-panel__form" id="searchForm">
+      <svg class="search-panel__icon" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" id="searchInput" placeholder="Buscar en la colección: pantalón, chalk bag, arnés..." autocomplete="off">
+      <button type="button" class="search-panel__close" id="searchClose" aria-label="Cerrar búsqueda">&times;</button>
+    </form>
+    <div class="search-panel__results" id="searchResults" hidden></div>
+  </div>
+</div>
+
+<main>
+  <section class="legal legal--compact">
+    <div class="container" style="max-width:760px">
+      <p class="eyebrow">Compromiso RAWGAT</p>
+      <h1>Tu equipo, respaldado de verdad</h1>
+      <p>No vendemos equipo desechable. Cada prenda RAWGAT se prueba en muro, boulder y roca antes de salir a la venta, y la respaldamos con una garantía real — no letra chica. Esto es lo que cubre y cómo hacerla efectiva.</p>
+
+      <div class="guarantee-pillars">
+        <div class="guarantee-pillar">
+          <strong>5 años</strong>
+          <span>de garantía en costuras</span>
+        </div>
+        <div class="guarantee-pillar">
+          <strong>30 días</strong>
+          <span>de prueba en la roca</span>
+        </div>
+        <div class="guarantee-pillar">
+          <strong>30 días</strong>
+          <span>para devoluciones</span>
+        </div>
+      </div>
+
+      <h2>Qué cubre la garantía de costuras</h2>
+      <ul>
+        <li>Defectos de fabricación en costuras durante los primeros 5 años desde la compra.</li>
+        <li>Reparación o reemplazo de la prenda, según lo que corresponda al defecto.</li>
+        <li>Aplica al comprador original, con el pedido asociado a tu cuenta RAWGAT.</li>
+      </ul>
+
+      <h2>Qué no cubre</h2>
+      <ul>
+        <li>Desgaste normal por uso (roce con roca, decoloración, pilling).</li>
+        <li>Daños por mal uso, lavado incorrecto o modificaciones no autorizadas a la prenda.</li>
+        <li>Prendas compradas de segunda mano o fuera de rawgat.com.</li>
+      </ul>
+
+      <h2>30 días de prueba en la roca</h2>
+      <p>Además de la garantía de costuras, tienes 30 días desde que recibes tu pedido para probar la prenda en condiciones reales — muro, boulder, vía — y decidir si es para ti. Si no cumple, se aplica la política de devoluciones: sin usar, con etiquetas y en su embalaje original.</p>
+
+      <h2>Cómo reclamar tu garantía</h2>
+      <ol>
+        <li>Escríbenos a <span class="legal__placeholder">[correo de contacto]</span> con tu número de pedido.</li>
+        <li>Adjunta 2-3 fotos claras del defecto en la costura.</li>
+        <li>Te confirmamos en <span class="legal__placeholder">[plazo de respuesta, ej. 3 días hábiles]</span> si corresponde reparación o reemplazo, y los siguientes pasos de envío.</li>
+      </ol>
+
+      <h2>Reparamos, no reemplazamos</h2>
+      <p>RAWGAT nació apostando por el reciclaje y por reparar antes que reemplazar — le decimos no a la moda rápida. Por eso, cuando el defecto lo permite, priorizamos reparar tu prenda por sobre reemplazarla: es la forma más consecuente con por qué existe esta marca.</p>
+
+      <h2>Contacto</h2>
+      <p>¿Dudas sobre tu garantía o tu pedido? Escríbenos a <span class="legal__placeholder">[correo de contacto]</span>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <a href="/index.html#inicio" class="brand">
+        <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
+        <span class="brand__name">RAWGAT</span>
+      </a>
+      <p>Construido para durar. Hecho para escalar.</p>
+    </div>
+
+    <div class="footer__col">
+      <h4>Tienda</h4>
+      <a href="/index.html#coleccion">Colección</a>
+      <a href="/index.html#coleccion">Poleras</a>
+      <a href="/index.html#coleccion">Pantalones</a>
+      <a href="/index.html#coleccion">Accesorios</a>
+    </div>
+
+    <div class="footer__col">
+      <h4>Marca</h4>
+      <a href="/index.html#historia">Nuestra historia</a>
+      <a href="/index.html#tecnologia">Tecnología</a>
+      <a href="/index.html#opiniones">Opiniones</a>
+    </div>
+
+    <div class="footer__col">
+      <h4>Ayuda</h4>
+      <a href="/index.html#contacto">Contacto</a>
+      <a href="/garantia.html">Garantía</a>
+      <a href="/guia-tallas.html">Guía de tallas</a>
+      <a href="/guia-cuidado.html">Cuidado de prendas</a>
+    </div>
+
+    <div class="footer__col footer__social">
+      <h4>Síguenos</h4>
+      <div class="social-links">
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="TikTok">TT</a>
+        <a href="#" aria-label="Strava">ST</a>
+      </div>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© 2026 RAWGAT. Todos los derechos reservados.</span>
+    <span class="footer__legal-links"><a href="/privacidad.html">Política de privacidad</a> · <a href="/terminos.html">Términos y condiciones</a></span>
+    <span>Hecho en Chile para escaladores de todo el mundo.</span>
+  </div>
+</footer>
+
+<div class="account-overlay" id="accountOverlay"></div>
+<aside class="account-drawer" id="accountDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Mi cuenta</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Cerrar cuenta">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="accountBody"></div>
+</aside>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Tu carrito</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Cerrar carrito">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="cartBody">
+    <p class="cart-drawer__empty">Tu carrito está vacío.</p>
+  </div>
+  <div class="cart-drawer__footer" id="cartFooter" hidden>
+    <div class="cart-drawer__total">
+      <span>Total</span>
+      <strong id="cartTotal">0,00 €</strong>
+    </div>
+    <div id="paypalButtons"></div>
+    <p class="cart-drawer__demo-note">Pago de prueba (PayPal Sandbox) — no se realizan cobros reales.</p>
+  </div>
+</aside>
+
+<script src="/js/shared.js"></script>
+</body>
+</html>
