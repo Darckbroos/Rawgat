@@ -8,6 +8,7 @@ const auth = require('./auth');
 const sessionRoutes = require('./routes/session');
 const customerRoutes = require('./routes/customers');
 const productRoutes = require('./routes/products');
+const reviewRoutes = require('./routes/reviews');
 const discountRoutes = require('./routes/discounts');
 const analyticsRoutes = require('./routes/analytics');
 const checkoutRoutes = require('./routes/checkout');
@@ -69,11 +70,20 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(sessionRoutes);
 app.use(customerRoutes);
 app.use(productRoutes);
+app.use(reviewRoutes);
 app.use(discountRoutes);
 app.use(analyticsRoutes);
 app.use(checkoutRoutes);
 app.use(accountingRoutes);
 app.use(backupRoutes);
+
+// Ficha de producto: misma plantilla para cualquier :id, el producto en sí
+// se pide al API desde el navegador. 404 real (no solo en el cliente) si el
+// id no es un número, para no servir la página con una URL con basura.
+app.get('/producto/:id', (req, res, next) => {
+  if (!/^\d+$/.test(req.params.id)) return next();
+  res.sendFile(path.join(__dirname, '..', 'public', 'producto.html'));
+});
 
 // Admin panel: login page is public, dashboard requires a valid session.
 // Clean URLs (no ".html") so the admin surface doesn't look like a bare static page.

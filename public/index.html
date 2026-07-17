@@ -32,6 +32,9 @@
 
     <div class="header__actions">
       <a href="#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
+      <button class="search-btn" id="searchBtn" aria-label="Buscar productos">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <button class="account-btn" id="accountBtn" aria-label="Mi cuenta">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span class="account-btn__name" id="accountName" hidden></span>
@@ -46,6 +49,18 @@
     </div>
   </div>
 </header>
+
+<div class="search-overlay" id="searchOverlay"></div>
+<div class="search-panel" id="searchPanel" aria-hidden="true">
+  <div class="container search-panel__inner">
+    <form class="search-panel__form" id="searchForm">
+      <svg class="search-panel__icon" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" id="searchInput" placeholder="Buscar en la colección: pantalón, chalk bag, arnés..." autocomplete="off">
+      <button type="button" class="search-panel__close" id="searchClose" aria-label="Cerrar búsqueda">&times;</button>
+    </form>
+    <div class="search-panel__results" id="searchResults" hidden></div>
+  </div>
+</div>
 
 <main>
 
@@ -144,9 +159,48 @@
   <!-- COLECCION / PRODUCTOS -->
   <section class="collection" id="coleccion">
     <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">Colección</p>
-        <h2>Equípate para la aventura</h2>
+      <div class="section-head collection__head">
+        <div>
+          <p class="eyebrow" id="collectionEyebrow">Colección</p>
+          <h2 id="collectionHeading">Equípate para la aventura</h2>
+        </div>
+        <label class="collection__sort">
+          Ordenar por
+          <select id="collectionSort">
+            <option value="relevancia">Relevancia</option>
+            <option value="novedad">Novedades</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+          </select>
+        </label>
+      </div>
+      <div class="collection__filters" id="collectionFilters">
+        <div class="filter-group">
+          <span class="filter-group__label">Talla</span>
+          <div class="filter-chips" id="sizeFilterChips">
+            <button type="button" data-size-filter="XS">XS</button>
+            <button type="button" data-size-filter="S">S</button>
+            <button type="button" data-size-filter="M">M</button>
+            <button type="button" data-size-filter="L">L</button>
+            <button type="button" data-size-filter="XL">XL</button>
+            <button type="button" data-size-filter="XXL">XXL</button>
+          </div>
+        </div>
+        <label class="filter-group filter-group--select">
+          <span class="filter-group__label">Precio</span>
+          <select id="priceFilterSelect">
+            <option value="">Todos los precios</option>
+            <option value="0-25">Menos de 25€</option>
+            <option value="25-50">25€ – 50€</option>
+            <option value="50-75">50€ – 75€</option>
+            <option value="75+">Más de 75€</option>
+          </select>
+        </label>
+        <label class="filter-checkbox">
+          <input type="checkbox" id="discountFilterCheckbox">
+          Solo rebajas
+        </label>
+        <button type="button" class="filter-clear" id="clearFiltersBtn" hidden>Limpiar filtros ×</button>
       </div>
       <div class="collection__grid" id="collectionGrid" data-tilt-root>
         <p class="collection__loading">Cargando colección…</p>
@@ -244,7 +298,9 @@
       <h4>Ayuda</h4>
       <a href="#contacto">Contacto</a>
       <a href="#contacto">Envíos y devoluciones</a>
-      <a href="#contacto">Guía de tallas</a>
+      <a href="garantia.html">Garantía</a>
+      <a href="guia-tallas.html">Guía de tallas</a>
+      <a href="guia-cuidado.html">Cuidado de prendas</a>
     </div>
 
     <div class="footer__col footer__social">
@@ -291,6 +347,7 @@
   </div>
 </aside>
 
+<script src="js/shared.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

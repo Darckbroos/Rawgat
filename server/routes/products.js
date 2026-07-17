@@ -60,6 +60,25 @@ router.delete('/admin/api/products/:id', requireAuth, (req, res) => {
   res.status(204).end();
 });
 
+// Mismo cálculo para el listado y para la ficha individual: un producto no
+// puede mostrar un precio en la vitrina y otro distinto en su propia página.
+function withPricing(product, isLoggedIn) {
+  const discount = db.getEffectiveDiscountForProduct(product);
+  const finalPrice = discount ? Math.round(product.price * (1 - discount.percent / 100) * 100) / 100 : product.price;
+  return {
+    ...product,
+    discount: discount ? {
+      code: discount.code,
+      percent: discount.percent,
+      expiresAt: discount.expiresAt,
+      scope: discount.scope || 'all'
+    } : null,
+    finalPrice: isLoggedIn ? finalPrice : product.price,
+    memberPrice: discount ? finalPrice : null,
+    discountLocked: !!discount && !isLoggedIn
+  };
+}
+
 // Public read-only: incluye el descuento vigente (todo el sitio, categoría o
 // producto específico) y el precio final ya calculado para cada producto.
 // Los descuentos son solo para clientes registrados: quien no inició sesión
@@ -67,23 +86,16 @@ router.delete('/admin/api/products/:id', requireAuth, (req, res) => {
 // el precio que paga (acá y en el checkout) es siempre el de lista.
 router.get('/api/products', (req, res) => {
   const isLoggedIn = !!(req.session && req.session.customerId);
-  const products = db.getProducts({ onlyActive: true }).map(p => {
-    const discount = db.getEffectiveDiscountForProduct(p);
-    const finalPrice = discount ? Math.round(p.price * (1 - discount.percent / 100) * 100) / 100 : p.price;
-    return {
-      ...p,
-      discount: discount ? {
-        code: discount.code,
-        percent: discount.percent,
-        expiresAt: discount.expiresAt,
-        scope: discount.scope || 'all'
-      } : null,
-      finalPrice: isLoggedIn ? finalPrice : p.price,
-      memberPrice: discount ? finalPrice : null,
-      discountLocked: !!discount && !isLoggedIn
-    };
-  });
-  res.json(products);
+  res.json(db.getProducts({ onlyActive: true }).map(p => withPricing(p, isLoggedIn)));
+});
+
+// Ficha individual: misma info que el listado, para la página de producto
+// propia (/producto/:id). 404 si no existe o está desactivado.
+router.get('/api/products/:id', (req, res) => {
+  const isLoggedIn = !!(req.session && req.session.customerId);
+  const product = db.getProducts({ onlyActive: true }).find(p => p.id === Number(req.params.id));
+  if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+  res.json(withPricing(product, isLoggedIn));
 });
 
 module.exports = router;

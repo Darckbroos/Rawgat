@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAWGAT — Ficha de producto</title>
+<meta name="description" content="Detalle de producto RAWGAT: equipo técnico de escalada probado en muro, boulder y roca.">
+<link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar" id="topbar">Envío gratis en Europa por compras sobre 60€ · Devoluciones dentro de 30 días</div>
+
+<header class="header" id="header">
+  <div class="container header__inner">
+    <a href="/index.html#inicio" class="brand">
+      <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
+      <span class="brand__name">RAWGAT</span>
+    </a>
+
+    <nav class="nav" id="nav">
+      <a href="/index.html#coleccion">Colección</a>
+      <a href="/index.html?audiencia=Hombre#coleccion">Hombre</a>
+      <a href="/index.html?audiencia=Mujer#coleccion">Mujer</a>
+      <a href="/index.html?audiencia=Niños#coleccion">Niños</a>
+      <a href="/index.html?categoria=Accesorios#coleccion">Accesorios</a>
+      <a href="/index.html?rebajas=1#coleccion" class="nav__sale">Rebajas</a>
+    </nav>
+
+    <div class="header__actions">
+      <a href="/index.html#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
+      <button class="search-btn" id="searchBtn" aria-label="Buscar productos">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="account-btn" id="accountBtn" aria-label="Mi cuenta">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="account-btn__name" id="accountName" hidden></span>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="Ver carrito">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
+        <span class="cart-btn__count" id="cartCount" hidden>0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="search-overlay" id="searchOverlay"></div>
+<div class="search-panel" id="searchPanel" aria-hidden="true">
+  <div class="container search-panel__inner">
+    <form class="search-panel__form" id="searchForm">
+      <svg class="search-panel__icon" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" id="searchInput" placeholder="Buscar en la colección: pantalón, chalk bag, arnés..." autocomplete="off">
+      <button type="button" class="search-panel__close" id="searchClose" aria-label="Cerrar búsqueda">&times;</button>
+    </form>
+    <div class="search-panel__results" id="searchResults" hidden></div>
+  </div>
+</div>
+
+<main>
+  <div class="container pdp__crumb">
+    <a href="/index.html#coleccion" class="pdp__back">← Volver a la colección</a>
+  </div>
+
+  <div id="pdpLoading" class="pdp__status">Cargando producto…</div>
+
+  <div id="pdpNotFound" class="pdp__status" hidden>
+    <p>No encontramos este producto. Puede que ya no esté disponible.</p>
+    <a href="/index.html#coleccion" class="btn btn--primary btn--sm">Ver la colección</a>
+  </div>
+
+  <section class="pdp" id="pdp" hidden>
+    <div class="container pdp__layout">
+      <div class="pdp__media" id="pdpMedia"></div>
+
+      <div class="pdp__info">
+        <p class="eyebrow" id="pdpCategory"></p>
+        <h1 id="pdpName"></h1>
+        <div class="pdp__price" id="pdpPrice"></div>
+        <p id="pdpMemberNote" class="product-card__member-note" hidden></p>
+        <p id="pdpDescription" class="pdp__description"></p>
+
+        <div class="pdp__form">
+          <label id="pdpSizeLabel" for="pdpSizeSelect" hidden>
+            Talla
+            <select class="size-select" id="pdpSizeSelect" data-size-select=""></select>
+          </label>
+          <button type="button" class="btn btn--primary" id="pdpAddBtn" data-add-to-cart="">Agregar al carrito</button>
+          <p id="pdpStockNote" class="pdp__stock-note" hidden></p>
+        </div>
+
+        <ul class="pdp__trust">
+          <li>5 años de garantía en costuras</li>
+          <li>30 días de prueba en la roca</li>
+          <li>Envío gratis en Europa desde 60€ · devoluciones en 30 días</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="pdp-reviews" id="pdpReviews" hidden>
+    <div class="container pdp-reviews__inner">
+      <div class="pdp-reviews__head">
+        <p class="eyebrow">Opiniones</p>
+        <h2>Lo que dicen quienes ya la compraron</h2>
+        <p class="pdp-reviews__summary" id="reviewsSummary"></p>
+      </div>
+      <div id="reviewsList"></div>
+    </div>
+  </section>
+
+  <section class="pdp-related" id="pdpRelated" hidden>
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">También te puede interesar</p>
+        <h2>Más de la colección</h2>
+      </div>
+      <div class="collection__grid" id="relatedGrid" data-tilt-root></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <a href="/index.html#inicio" class="brand">
+        <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
+        <span class="brand__name">RAWGAT</span>
+      </a>
+      <p>Construido para durar. Hecho para escalar.</p>
+    </div>
+
+    <div class="footer__col">
+      <h4>Tienda</h4>
+      <a href="/index.html#coleccion">Colección</a>
+      <a href="/index.html#coleccion">Poleras</a>
+      <a href="/index.html#coleccion">Pantalones</a>
+      <a href="/index.html#coleccion">Accesorios</a>
+    </div>
+
+    <div class="footer__col">
+      <h4>Marca</h4>
+      <a href="/index.html#historia">Nuestra historia</a>
+      <a href="/index.html#tecnologia">Tecnología</a>
+      <a href="/index.html#opiniones">Opiniones</a>
+    </div>
+
+    <div class="footer__col">
+      <h4>Ayuda</h4>
+      <a href="/index.html#contacto">Contacto</a>
+      <a href="/index.html#contacto">Envíos y devoluciones</a>
+      <a href="/garantia.html">Garantía</a>
+      <a href="/guia-tallas.html">Guía de tallas</a>
+      <a href="/guia-cuidado.html">Cuidado de prendas</a>
+    </div>
+
+    <div class="footer__col footer__social">
+      <h4>Síguenos</h4>
+      <div class="social-links">
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="TikTok">TT</a>
+        <a href="#" aria-label="Strava">ST</a>
+      </div>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© 2026 RAWGAT. Todos los derechos reservados.</span>
+    <span class="footer__legal-links"><a href="/privacidad.html">Política de privacidad</a> · <a href="/terminos.html">Términos y condiciones</a></span>
+    <span>Hecho en Chile para escaladores de todo el mundo.</span>
+  </div>
+</footer>
+
+<div class="account-overlay" id="accountOverlay"></div>
+<aside class="account-drawer" id="accountDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Mi cuenta</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Cerrar cuenta">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="accountBody"></div>
+</aside>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Tu carrito</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Cerrar carrito">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="cartBody">
+    <p class="cart-drawer__empty">Tu carrito está vacío.</p>
+  </div>
+  <div class="cart-drawer__footer" id="cartFooter" hidden>
+    <div class="cart-drawer__total">
+      <span>Total</span>
+      <strong id="cartTotal">0,00 €</strong>
+    </div>
+    <div id="paypalButtons"></div>
+    <p class="cart-drawer__demo-note">Pago de prueba (PayPal Sandbox) — no se realizan cobros reales.</p>
+  </div>
+</aside>
+
+<script src="/js/shared.js"></script>
+<script src="/js/producto.js"></script>
+</body>
+</html>
