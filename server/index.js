@@ -35,6 +35,7 @@ app.use(helmet({
       styleSrc: ["'self'", 'https://fonts.googleapis.com', "'unsafe-inline'"],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:', 'https://www.paypalobjects.com'],
+      mediaSrc: ["'self'"],
       connectSrc: ["'self'", 'https://www.paypal.com', 'https://www.sandbox.paypal.com'],
       frameSrc: ["'self'", 'https://www.paypal.com', 'https://www.sandbox.paypal.com'],
       objectSrc: ["'none'"],

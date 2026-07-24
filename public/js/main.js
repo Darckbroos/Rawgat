@@ -5,6 +5,11 @@
 document.querySelectorAll('.feature-card, .testimonial, .story__inner, .section-head')
   .forEach(attachReveal);
 
+// Quien prefiere menos movimiento se queda con el poster fijo del video,
+// no con el loop reproduciéndose de fondo.
+const heroVideo = document.getElementById('heroVideo');
+if (heroVideo && prefersReducedMotion) heroVideo.pause();
+
 // 3D tilt en el hero/story (los de las tarjetas de producto se activan en
 // productCardHtml/renderProducts, vía attachTilt de shared.js)
 if (tiltEnabled) {
