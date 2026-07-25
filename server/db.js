@@ -247,6 +247,11 @@ function getAdmin() {
   return data.admin;
 }
 
+function updateAdminPassword(newPassword) {
+  data.admin.passwordHash = bcrypt.hashSync(newPassword, 10);
+  save();
+}
+
 // ---------- Customers ----------
 // Cuenta separada de la del admin: es la que usan los clientes en la tienda
 // para iniciar sesión, ver su historial y recibir el descuento de bienvenida.
@@ -883,7 +888,7 @@ function importData(backup) {
 }
 
 module.exports = {
-  getAdmin,
+  getAdmin, updateAdminPassword,
   sanitizeCustomer, getCustomerByEmail, getCustomerById, createCustomer, verifyCustomerLogin,
   updateCustomerProfile, redeemWelcomeDiscount, getCustomerOrders, getCustomers, deleteCustomer,
   getProducts, addProduct, updateProduct, deleteProduct, decrementSizeStock,

@@ -36,6 +36,10 @@ function createLoginLimiter() {
 
 const adminLimiter = createLoginLimiter();
 const customerLimiter = createLoginLimiter();
+// Mismo mecanismo que los logins, pero contando cada intento de registro
+// (no solo los fallidos): sin esto, alguien podía crear cuentas sin límite
+// para farmear el descuento de bienvenida.
+const registrationLimiter = createLoginLimiter();
 
 function verifyLogin(username, password) {
   const admin = db.getAdmin();
@@ -63,6 +67,7 @@ module.exports = {
   registerFailedAttempt: adminLimiter.registerFailedAttempt,
   clearAttempts: adminLimiter.clearAttempts,
   customerLimiter,
+  registrationLimiter,
   verifyLogin,
   requireAuth,
   requireAuthPage,

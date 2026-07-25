@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { customerLimiter, requireCustomerAuth, requireAuth } = require('../auth');
+const { customerLimiter, registrationLimiter, requireCustomerAuth, requireAuth } = require('../auth');
 
 const router = express.Router();
 
@@ -18,6 +18,12 @@ router.delete('/admin/api/customers/:id', requireAuth, (req, res) => {
 });
 
 router.post('/api/account/register', (req, res) => {
+  const ip = req.ip;
+  if (registrationLimiter.isLockedOut(ip)) {
+    return res.status(429).json({ error: 'Demasiadas cuentas creadas desde aquí. Intenta de nuevo en unos minutos.' });
+  }
+  registrationLimiter.registerFailedAttempt(ip);
+
   const { name, email, password } = req.body || {};
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nombre, correo y contraseña son obligatorios' });

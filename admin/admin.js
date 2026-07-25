@@ -1083,6 +1083,36 @@ if (page === 'dashboard') {
     }
   });
 
+  // ----- Seguridad -----
+  document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const msg = document.getElementById('passwordFormMsg');
+    const btn = form.querySelector('button[type="submit"]');
+    const formData = new FormData(form);
+    btn.disabled = true;
+    msg.hidden = true;
+    try {
+      await api('/admin/api/password', {
+        method: 'PUT',
+        body: JSON.stringify({
+          currentPassword: formData.get('currentPassword'),
+          newPassword: formData.get('newPassword')
+        })
+      });
+      msg.textContent = 'Contraseña actualizada.';
+      msg.className = 'password-form__msg password-form__msg--ok';
+      msg.hidden = false;
+      form.reset();
+    } catch (err) {
+      msg.textContent = err.message || 'No se pudo cambiar la contraseña';
+      msg.className = 'password-form__msg password-form__msg--error';
+      msg.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // Mantiene el resumen, la contabilidad y el stock al día sin recargar la
   // página. Se salta la actualización mientras hay un modal abierto para no
   // interrumpir una edición en curso.

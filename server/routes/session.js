@@ -1,5 +1,6 @@
 const express = require('express');
 const auth = require('../auth');
+const db = require('../db');
 
 const router = express.Router();
 
@@ -37,6 +38,21 @@ router.get('/admin/api/me', (req, res) => {
     return res.json({ authenticated: true, username: req.session.username });
   }
   res.json({ authenticated: false });
+});
+
+router.put('/admin/api/password', auth.requireAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Ingresa la contraseña actual y la nueva' });
+  }
+  if (!auth.verifyLogin(db.getAdmin().username, currentPassword)) {
+    return res.status(401).json({ error: 'La contraseña actual no es correcta' });
+  }
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+  }
+  db.updateAdminPassword(newPassword);
+  res.json({ ok: true });
 });
 
 module.exports = router;
