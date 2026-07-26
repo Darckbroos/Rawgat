@@ -225,12 +225,12 @@ p { margin: 0 0 1em; color: var(--stone); }
 .hero__content {
   position: relative;
   z-index: 2;
-  max-width: 760px;
+  max-width: 860px;
   padding-bottom: 60px;
   transform-style: preserve-3d;
 }
 .hero h1 {
-  font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+  font-size: clamp(0.95rem, 5vw, 2.9rem);
   color: var(--white);
 }
 .hero__lead {
