@@ -8,13 +8,13 @@
 const navToggle = document.getElementById('navToggle');
 const nav = document.getElementById('nav');
 
-navToggle.addEventListener('click', () => {
+navToggle?.addEventListener('click', () => {
   const isOpen = nav.classList.toggle('is-open');
   navToggle.classList.toggle('is-active', isOpen);
   navToggle.setAttribute('aria-expanded', String(isOpen));
 });
 
-nav.querySelectorAll('a').forEach(link => {
+nav?.querySelectorAll('a').forEach(link => {
   link.addEventListener('click', () => {
     nav.classList.remove('is-open');
     navToggle.classList.remove('is-active');
@@ -23,22 +23,35 @@ nav.querySelectorAll('a').forEach(link => {
 });
 
 // ---------------- Scroll reveal / tilt (utilidades reusables) ----------------
-const revealObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('is-visible');
-      revealObserver.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.15 });
-
-function attachReveal(el) {
-  el.setAttribute('data-reveal', '');
-  revealObserver.observe(el);
-}
-
 const prefersFinePointer = window.matchMedia('(pointer: fine)').matches;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Aparición al hacer scroll. El contenido es visible por defecto: solo se
+// oculta (vía CSS) cuando este script ya marcó el elemento como
+// "pendiente" Y el sistema no pide reducir movimiento. Antes el texto
+// quedaba casi blanco a mitad de scroll porque la transición dependía de un
+// umbral del 15 % del elemento (en bloques altos tardaba en dispararse);
+// ahora basta con que asome y la animación es corta.
+const revealObserver = ('IntersectionObserver' in window && !prefersReducedMotion)
+  ? new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.remove('is-pending');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0, rootMargin: '0px 0px -8% 0px' })
+  : null;
+
+function attachReveal(el) {
+  if (!revealObserver) return;
+  const rect = el.getBoundingClientRect();
+  // Lo que ya está en pantalla al cargar no se anima: se ve tal cual.
+  if (rect.top < window.innerHeight && rect.bottom > 0) return;
+  el.setAttribute('data-reveal', '');
+  el.classList.add('is-pending');
+  revealObserver.observe(el);
+}
 const tiltEnabled = prefersFinePointer && !prefersReducedMotion;
 
 function attachTilt(card) {
@@ -62,6 +75,12 @@ function attachTilt(card) {
 }
 
 document.querySelectorAll('[data-tilt]').forEach(attachTilt);
+document.querySelectorAll('[data-reveal-on-scroll]').forEach(attachReveal);
+
+// Enlaces del pie sin página todavía (FAQ, Contact): no saltan al inicio.
+document.addEventListener('click', (e) => {
+  if (e.target.closest('a[data-pending-page]')) e.preventDefault();
+});
 
 // ---------------- Newsletter (si la página tiene el formulario) ----------------
 const newsletterForm = document.getElementById('newsletterForm');
@@ -142,51 +161,117 @@ function matchesSearch(product, query) {
   return haystack.includes(needle);
 }
 
-// Tarjeta de producto: la usan tanto la vitrina de colección como los
-// "también te puede interesar" de la ficha de producto — una sola fuente
-// de verdad para que ambas se vean y se comporten igual.
-function productCardHtml(p, mediaIndex) {
+// ---------------- Huecos de maqueta ----------------
+// Hueco de imagen: rectángulo con la proporción final y su ID visible
+// (ej. "IMG-07 · 16:9"). Cuando llegue la foto se reemplaza el hueco por la
+// imagen sin tocar el layout. tone: 'light' (crema) o 'dark' (carbón).
+function imageSlotHtml(id, ratio, tone = 'light', extraClass = '') {
+  return `<div class="img-slot img-slot--${tone} ${extraClass}" style="--ratio:${ratio.replace(':', '/')}" role="img" aria-label="Image placeholder ${escapeHtml(id)}"><span>${escapeHtml(id)} · ${escapeHtml(ratio)}</span></div>`;
+}
+
+// Las 5 filas fijas de especificaciones (informe de maquetación). Los
+// valores vienen del producto (p.specs.<clave>); una fila sin dato no se
+// muestra.
+const SPEC_ROWS = [
+  ['edges', 'Edges'],
+  ['dimensions', 'Dimensions'],
+  ['weight', 'Weight'],
+  ['material', 'Material'],
+  ['mounting', 'Mounting']
+];
+
+function specsTableHtml(p, { placeholder = false } = {}) {
+  if (placeholder) {
+    return `<dl class="specs specs--placeholder">${SPEC_ROWS.map(([, label]) => `<div class="specs__row"><dt>${label}</dt><dd><span class="skeleton skeleton--short"></span></dd></div>`).join('')}</dl>`;
+  }
+  const specs = (p && p.specs) || {};
+  const rows = SPEC_ROWS.filter(([key]) => specs[key] !== undefined && specs[key] !== null && String(specs[key]).trim() !== '');
+  if (!rows.length) return '';
+  return `<dl class="specs">${rows.map(([key, label]) => `<div class="specs__row"><dt>${label}</dt><dd>${escapeHtml(specs[key])}</dd></div>`).join('')}</dl>`;
+}
+
+// Línea de stock conectada al admin: "[X] left in this first batch". Su
+// implementación (número real por lote) espera la estimación de coste del
+// entregable 4 — por ahora se maqueta solo su lugar, marcado como hueco.
+function stockLineHtml() {
+  return '<p class="stock-line slot" data-slot="stock-line">[X] left in this first batch</p>';
+}
+
+function priceHtml(p) {
   const discount = p.discount;
   const locked = !!p.discountLocked;
-  const priceHtml = discount && !locked
+  return discount && !locked
     ? `<span class="price__original">${money(p.price)}</span> ${money(p.finalPrice)}`
     : money(p.price);
-  // El stock exacto ya no viaja del servidor al cliente (ver products.js):
-  // solo booleanos "inStock" / "lowStock" / "available" por talla.
-  const outOfStock = !p.inStock;
-  const lowStock = !!p.lowStock;
-  const sizes = Array.isArray(p.sizes) ? p.sizes : [];
-  const showSizePicker = CLOTHING_CATEGORIES.includes(p.category) && !outOfStock;
-  const sizeOptions = CLOTHING_SIZES.map(size => {
-    const entry = sizes.find(s => s.size === size);
-    const available = entry ? entry.available : false;
-    return `<option value="${size}" ${available ? '' : 'disabled'}>${size}${available ? '' : ' (sold out)'}</option>`;
-  }).join('');
+}
 
+// Tarjeta de producto de la Collection. Sin selector de talla ni filtros
+// (informe): imagen 1:1, nombre, descripción, tabla de 5 especificaciones,
+// precio + "Add to cart" y la línea de stock.
+function productCardHtml(p, slotIndex = 0) {
+  const outOfStock = !p.inStock;
   return `
-    <article class="product-card" data-tilt>
-      <a class="product-card__media ${MEDIA_CLASSES[mediaIndex % MEDIA_CLASSES.length]}" href="/producto/${p.id}">
-        ${outOfStock ? `<span class="tag tag--stock">Sold out</span>` : (p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : '')}
-        ${discount ? `<span class="tag tag--discount">-${Number(discount.percent) || 0}%</span>` : ''}
+    <article class="product-card">
+      <a class="product-card__media" href="/producto/${p.id}">
         ${p.image
           ? `<img class="product-card__photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`
-          : `<svg class="product-card__icon" viewBox="0 0 64 64">${PRODUCT_ICONS[p.icon] || PRODUCT_ICONS.shirt}</svg>`}
+          : imageSlotHtml('IMG-01', '1:1', 'light')}
       </a>
       <div class="product-card__body">
         <h3><a href="/producto/${p.id}">${escapeHtml(p.name)}</a></h3>
-        <p>${escapeHtml(p.description || '')}</p>
-        ${showSizePicker ? `<select class="size-select" data-size-select="${p.id}">${sizeOptions}</select>` : ''}
-        <div class="product-card__row">
-          <span class="price">${priceHtml}</span>
-          <button type="button" class="btn btn--sm btn--primary" data-add-to-cart="${p.id}" ${outOfStock ? 'disabled' : ''}>${outOfStock ? 'Sold out' : 'Add to cart'}</button>
+        <p class="product-card__desc">${escapeHtml(p.description || '')}</p>
+        ${specsTableHtml(p)}
+        <div class="product-card__buy">
+          <div class="product-card__row">
+            <span class="price">${priceHtml(p)}</span>
+            <button type="button" class="btn btn--primary" data-add-to-cart="${p.id}" ${outOfStock ? 'disabled' : ''}>${outOfStock ? 'Sold out' : 'Add to cart'}</button>
+          </div>
+          ${stockLineHtml()}
         </div>
-        ${discount && !locked ? `<p class="product-card__countdown">Code ${escapeHtml(discount.code)} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span></p>` : ''}
-        ${locked ? `<p class="product-card__member-note">Member price ${money(p.memberPrice)} · <button type="button" data-open-account>Sign up to unlock</button></p>` : ''}
-        ${lowStock ? `<p class="product-card__stock-note">Low stock — order soon!</p>` : ''}
       </div>
     </article>
   `;
 }
+
+// Hueco de producto: misma estructura que la tarjeta, sin datos. Se muestra
+// mientras no haya un producto activo cargado desde el admin para ese lugar.
+function productPlaceholderHtml() {
+  return `
+    <article class="product-card product-card--placeholder" aria-label="Product coming soon">
+      <div class="product-card__media">${imageSlotHtml('IMG-01', '1:1', 'light')}</div>
+      <div class="product-card__body">
+        <h3><span class="skeleton skeleton--title"></span></h3>
+        <p class="product-card__desc"><span class="skeleton"></span><span class="skeleton skeleton--mid"></span></p>
+        ${specsTableHtml(null, { placeholder: true })}
+        <div class="product-card__buy">
+          <div class="product-card__row">
+            <span class="price"><span class="skeleton skeleton--price"></span></span>
+            <button type="button" class="btn btn--primary" disabled>Coming soon</button>
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+// Columna "Shop" del pie de página: un enlace por producto (2 lugares),
+// vacíos hasta cargar los productos desde el admin.
+const FOOTER_SHOP_SLOTS = 2;
+function renderFooterShop(products) {
+  const col = document.getElementById('footerShopLinks');
+  if (!col) return;
+  const list = Array.isArray(products) ? products.slice(0, FOOTER_SHOP_SLOTS) : [];
+  const links = [];
+  for (let i = 0; i < FOOTER_SHOP_SLOTS; i++) {
+    const p = list[i];
+    links.push(p
+      ? `<a href="/producto/${p.id}">${escapeHtml(p.name)}</a>`
+      : '<span class="footer__link-slot" aria-hidden="true"><span class="skeleton skeleton--footer"></span></span>');
+  }
+  col.innerHTML = links.join('');
+}
+renderFooterShop([]);
+document.addEventListener('rawgat:products', (e) => renderFooterShop(e.detail));
 
 // ---------------- Catálogo (compartido entre carrito, búsqueda y vitrina) ----------------
 
@@ -207,23 +292,13 @@ fetch('/api/products')
     document.dispatchEvent(new CustomEvent('rawgat:products-error'));
   });
 
+// El descuento activo ya no reescribe la barra superior (su texto es fijo
+// según el informe). Se sigue emitiendo el evento por si alguna página lo
+// necesita; el código de la newsletter llegará con el entregable 4.
 fetch('/api/discounts/active')
   .then(res => res.json())
   .then(discount => {
-    const topbar = document.getElementById('topbar');
-    if (!discount) {
-      if (topbar) topbar.textContent = 'Free shipping in Europe on orders over €60 · Returns within 30 days';
-      document.dispatchEvent(new CustomEvent('rawgat:discount', { detail: null }));
-      return;
-    }
-    const percent = Number(discount.percent) || 0;
-    const code = escapeHtml(discount.code);
-    const countdownSpan = `<span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span>`;
-    if (topbar) {
-      topbar.innerHTML = `Sign up and use code <strong>${code}</strong> to get ${percent}% off ${countdownSpan}`;
-    }
-    updateCountdowns();
-    document.dispatchEvent(new CustomEvent('rawgat:discount', { detail: discount }));
+    document.dispatchEvent(new CustomEvent('rawgat:discount', { detail: discount || null }));
   })
   .catch(() => {});
 
@@ -827,6 +902,9 @@ fetchAccount().then(() => {
 
 // ---------------- Búsqueda ----------------
 
+// El buscador se eliminó de la cabecera nueva (con 2 productos no aporta).
+// Las páginas antiguas que aún lo tengan lo siguen usando; en las nuevas
+// closeSearch() queda como no-op.
 const searchBtn = document.getElementById('searchBtn');
 const searchOverlay = document.getElementById('searchOverlay');
 const searchPanel = document.getElementById('searchPanel');
@@ -838,6 +916,7 @@ const searchResultsEl = document.getElementById('searchResults');
 const SEARCH_PREVIEW_LIMIT = 5;
 
 function openSearch() {
+  if (!searchPanel) return;
   searchPanel.classList.add('is-open');
   searchOverlay.classList.add('is-open');
   searchBtn.classList.add('is-active');
@@ -846,6 +925,7 @@ function openSearch() {
 }
 
 function closeSearch() {
+  if (!searchPanel) return;
   searchPanel.classList.remove('is-open');
   searchOverlay.classList.remove('is-open');
   searchBtn.classList.remove('is-active');
@@ -905,6 +985,7 @@ function applySearchFilter(query) {
   }
 }
 
+if (searchBtn && searchPanel) {
 searchBtn.addEventListener('click', () => {
   if (searchPanel.classList.contains('is-open')) closeSearch();
   else openSearch();
@@ -928,3 +1009,4 @@ searchResultsEl.addEventListener('click', (e) => {
     applySearchFilter(searchInput.value);
   }
 });
+}

@@ -9,85 +9,99 @@ const pdpSection = document.getElementById('pdp');
 
 let currentProduct = null;
 
+// Galería: principal 1:1 + 5 miniaturas 1:1 (IMG-01 a IMG-06). Las fotos
+// vienen de p.gallery (lista de URLs) o, mientras el admin solo tenga una
+// imagen por producto, de p.image como principal. Lo que falta queda como
+// hueco con su ID.
+const GALLERY_SIZE = 6;
+
+function galleryUrls(p) {
+  if (!p) return [];
+  const list = Array.isArray(p.gallery) ? p.gallery.filter(Boolean) : [];
+  if (!list.length && p.image) list.push(p.image);
+  return list.slice(0, GALLERY_SIZE);
+}
+
+function slotId(n) {
+  return `IMG-${String(n).padStart(2, '0')}`;
+}
+
+function renderGallery(p) {
+  const urls = galleryUrls(p);
+  const name = p ? p.name : '';
+  const main = document.getElementById('pdpMain');
+  const thumbs = document.getElementById('pdpThumbs');
+
+  const showMain = (i) => {
+    main.innerHTML = urls[i]
+      ? `<img src="${escapeHtml(urls[i])}" alt="${escapeHtml(name)}">`
+      : imageSlotHtml(slotId(1), '1:1', 'light');
+    thumbs.querySelectorAll('button').forEach(btn => btn.classList.toggle('is-active', Number(btn.dataset.index) === i));
+  };
+
+  // Miniaturas = IMG-02 a IMG-06; si hay fotos, la primera también es miniatura
+  // para poder volver a ella.
+  const thumbHtml = [];
+  for (let n = 2; n <= GALLERY_SIZE; n++) {
+    const i = n - 1;
+    thumbHtml.push(urls[i]
+      ? `<button type="button" data-index="${i}" aria-label="Show image ${n}"><img src="${escapeHtml(urls[i])}" alt=""></button>`
+      : imageSlotHtml(slotId(n), '1:1', 'light'));
+  }
+  thumbs.innerHTML = thumbHtml.join('');
+  thumbs.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-index]');
+    if (btn) showMain(Number(btn.dataset.index));
+  });
+  showMain(0);
+}
+
+// p === null → plantilla vacía (vista previa en /producto.html): huecos de
+// imagen, líneas grises y botón desactivado "Coming soon".
 function renderProduct(p) {
   currentProduct = p;
+  const isTemplate = !p;
 
-  document.title = `${p.name} — RAWGAT`;
-  const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) metaDesc.setAttribute('content', p.description || document.title);
+  if (!isTemplate) {
+    document.title = `${p.name} — RAWGAT`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', p.description || document.title);
+  }
 
-  const media = document.getElementById('pdpMedia');
-  const outOfStock = !p.inStock;
-  media.innerHTML = `
-    ${outOfStock ? `<span class="tag tag--stock">Sold out</span>` : (p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : '')}
-    ${p.discount ? `<span class="tag tag--discount">-${Number(p.discount.percent) || 0}%</span>` : ''}
-    ${p.image
-      ? `<img class="product-card__photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`
-      : `<svg class="product-card__icon" viewBox="0 0 64 64">${PRODUCT_ICONS[p.icon] || PRODUCT_ICONS.shirt}</svg>`}
-  `;
+  renderGallery(p);
 
-  document.getElementById('pdpCategory').textContent = `${p.category} · ${p.audience}`;
-  document.getElementById('pdpName').textContent = p.name;
-  document.getElementById('pdpDescription').textContent = p.description || '';
-
+  const nameEl = document.getElementById('pdpName');
+  const descEl = document.getElementById('pdpDescription');
   const priceEl = document.getElementById('pdpPrice');
-  const locked = !!p.discountLocked;
-  priceEl.innerHTML = p.discount && !locked
-    ? `<span class="price__original">${money(p.price)}</span> ${money(p.finalPrice)}`
-    : money(p.price);
-
-  const memberNote = document.getElementById('pdpMemberNote');
-  if (locked) {
-    memberNote.hidden = false;
-    memberNote.innerHTML = `Member price ${money(p.memberPrice)} · <button type="button" data-open-account>Sign up to unlock</button>`;
-  } else {
-    memberNote.hidden = true;
-  }
-
-  const sizes = Array.isArray(p.sizes) ? p.sizes : [];
-  const showSizePicker = CLOTHING_CATEGORIES.includes(p.category) && !outOfStock;
-  const sizeLabel = document.getElementById('pdpSizeLabel');
-  const sizeSelect = document.getElementById('pdpSizeSelect');
-  const stockNote = document.getElementById('pdpStockNote');
-
-  if (showSizePicker) {
-    sizeLabel.hidden = false;
-    sizeSelect.dataset.sizeSelect = String(p.id);
-    sizeSelect.innerHTML = CLOTHING_SIZES.map(size => {
-      const entry = sizes.find(s => s.size === size);
-      const available = entry ? entry.available : false;
-      return `<option value="${size}" ${available ? '' : 'disabled'}>${size}${available ? '' : ' (sold out)'}</option>`;
-    }).join('');
-  } else {
-    sizeLabel.hidden = true;
-  }
-
-  // El servidor ya no manda cantidades exactas de stock, solo el booleano
-  // "lowStock" del producto (no distingue por talla) — se usa como aviso
-  // genérico, sin número, para no revelar cuánto queda exactamente.
-  function updateStockNote() {
-    const size = showSizePicker ? sizeSelect.value : 'Única';
-    const available = showSizePicker ? sizeAvailable(p, size) : !outOfStock;
-    if (!outOfStock && available && p.lowStock) {
-      stockNote.hidden = false;
-      stockNote.textContent = 'Low stock — order soon!';
-    } else {
-      stockNote.hidden = true;
-    }
-  }
-  if (showSizePicker) sizeSelect.addEventListener('change', updateStockNote);
-  updateStockNote();
-
   const addBtn = document.getElementById('pdpAddBtn');
-  addBtn.dataset.addToCart = String(p.id);
-  addBtn.disabled = outOfStock;
-  addBtn.textContent = outOfStock ? 'Sold out' : 'Add to cart';
+  const specsEl = document.getElementById('pdpSpecs');
+  const stockEl = document.getElementById('pdpStockLine');
+
+  if (isTemplate) {
+    nameEl.innerHTML = '<span class="skeleton skeleton--title"></span>';
+    descEl.innerHTML = '<span class="skeleton"></span><span class="skeleton"></span><span class="skeleton skeleton--mid"></span>';
+    priceEl.innerHTML = '<span class="skeleton skeleton--price"></span>';
+    addBtn.disabled = true;
+    addBtn.textContent = 'Coming soon';
+    addBtn.removeAttribute('data-add-to-cart');
+    specsEl.innerHTML = specsTableHtml(null, { placeholder: true });
+    stockEl.innerHTML = '';
+  } else {
+    const outOfStock = !p.inStock;
+    nameEl.textContent = p.name;
+    descEl.textContent = p.description || '';
+    priceEl.innerHTML = priceHtml(p);
+    addBtn.dataset.addToCart = String(p.id);
+    addBtn.disabled = outOfStock;
+    addBtn.textContent = outOfStock ? 'Sold out' : 'Add to cart';
+    specsEl.innerHTML = specsTableHtml(p);
+    stockEl.innerHTML = stockLineHtml();
+  }
 
   pdpLoading.hidden = true;
   pdpSection.hidden = false;
-  updateCountdowns();
-  renderRelated();
-  loadReviews(p.id);
+  document.getElementById('pdpReviews').hidden = false;
+  if (!isTemplate) loadReviews(p.id);
 }
 
 // Estrellas simples (texto, no íconos) para no depender de una fuente de
@@ -100,28 +114,28 @@ function loadReviewsList(id) {
   return fetch(`/api/products/${id}/reviews`)
     .then(res => res.json())
     .then(reviews => {
-      const section = document.getElementById('pdpReviews');
-      const summary = document.getElementById('reviewsSummary');
+      const empty = document.getElementById('reviewsEmpty');
       const list = document.getElementById('reviewsList');
-
       if (!reviews.length) {
-        summary.textContent = 'No reviews yet for this product.';
+        empty.hidden = false;
+        list.hidden = true;
         list.innerHTML = '';
-        section.hidden = false;
         return;
       }
-
-      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-      summary.innerHTML = `<strong>${starString(Math.round(avg))}</strong> ${avg.toFixed(1)} out of 5 · ${reviews.length} review${reviews.length === 1 ? '' : 's'}`;
-
+      // Tarjeta de reseña: nombre, fecha, producto, valoración, texto y
+      // etiqueta "Verified purchase". La etiqueta solo aparece si el
+      // servidor marca la reseña como compra verificada (r.verifiedPurchase);
+      // hoy el servidor aún no lo calcula, así que no se muestra a nadie.
       list.innerHTML = reviews.map(r => `
-        <blockquote class="testimonial pdp-review">
-          <p class="pdp-review__stars">${starString(r.rating)}</p>
-          <p>"${escapeHtml(r.text)}"</p>
-          <footer><strong>${escapeHtml(r.customerName)}</strong> — ${new Date(r.createdAt).toLocaleDateString('en-GB')}</footer>
+        <blockquote class="review-card">
+          <p class="review-card__stars" aria-label="${r.rating} out of 5">${starString(r.rating)}</p>
+          <p>${escapeHtml(r.text)}</p>
+          <footer class="review-card__meta"><strong>${escapeHtml(r.customerName)}</strong> · ${new Date(r.createdAt).toLocaleDateString('en-GB')} · ${escapeHtml(currentProduct ? currentProduct.name : '')}</footer>
+          ${r.verifiedPurchase ? '<span class="review-card__verified">Verified purchase</span>' : ''}
         </blockquote>
       `).join('');
-      section.hidden = false;
+      empty.hidden = true;
+      list.hidden = false;
     })
     .catch(() => {});
 }
@@ -228,30 +242,12 @@ document.addEventListener('rawgat:account', () => {
   if (currentProduct) loadReviews(currentProduct.id);
 });
 
-// Relacionados: misma categoría, sin el producto actual, hasta 4. La ficha
-// individual y el catálogo completo (PRODUCTS, en shared.js) llegan de dos
-// peticiones independientes — esto se llama desde ambas, así que no importa
-// cuál termine primero.
-function renderRelated() {
-  if (!currentProduct || !PRODUCTS.length) return;
-  const related = PRODUCTS
-    .filter(p => p.category === currentProduct.category && p.id !== currentProduct.id)
-    .slice(0, 4);
-  if (!related.length) return;
+// Vista previa de la plantilla vacía: /producto.html (sin id).
+const isTemplatePreview = /producto\.html$/.test(window.location.pathname);
 
-  const grid = document.getElementById('relatedGrid');
-  grid.innerHTML = related.map((p, i) => productCardHtml(p, i)).join('');
-  grid.querySelectorAll('.product-card').forEach(card => {
-    attachTilt(card);
-    attachReveal(card);
-  });
-  document.getElementById('pdpRelated').hidden = false;
-  updateCountdowns();
-}
-
-document.addEventListener('rawgat:products', renderRelated);
-
-fetch(`/api/products/${encodeURIComponent(productId)}`)
+if (isTemplatePreview) {
+  renderProduct(null);
+} else fetch(`/api/products/${encodeURIComponent(productId)}`)
   .then(res => {
     if (!res.ok) throw new Error('not-found');
     return res.json();

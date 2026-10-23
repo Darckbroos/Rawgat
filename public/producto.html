@@ -3,38 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAWGAT — Product page</title>
-<meta name="description" content="RAWGAT product detail: technical climbing gear tested on the wall, on boulders and on real rock.">
-<link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
+<title>RAWGAT — Product</title>
+<meta name="description" content="RAWGAT training tools, designed and 3D printed by a climber in Spain.">
+<link rel="icon" type="image/svg+xml" href="/assets/img/brand/rawgat-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-<div class="topbar" id="topbar">Free shipping in Europe on orders over €60 · Returns within 30 days</div>
+<!-- 1. Barra superior -->
+<div class="topbar" id="topbar">Designed and 3D printed in Spain.</div>
 
+<!-- 2. Cabecera y menú -->
 <header class="header" id="header">
   <div class="container header__inner">
-    <a href="/index.html#inicio" class="brand">
-      <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
+    <!-- [provisional] icono + palabra RAWGAT en línea, hasta que Bastián confirme la versión de cabecera -->
+    <a href="/" class="brand" aria-label="RAWGAT home">
+      <img src="/assets/img/brand/rawgat-icon.svg" alt="" class="brand__logo">
       <span class="brand__name">RAWGAT</span>
     </a>
 
-    <nav class="nav" id="nav">
-      <a href="/index.html#coleccion">Collection</a>
-      <a href="/index.html?audiencia=Men#coleccion">Men</a>
-      <a href="/index.html?audiencia=Women#coleccion">Women</a>
-      <a href="/index.html?audiencia=Kids#coleccion">Kids</a>
-      <a href="/index.html?categoria=Accessories#coleccion">Accessories</a>
-      <a href="/index.html?rebajas=1#coleccion" class="nav__sale">Sale</a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/#shop">Shop</a>
+      <a href="/#how-we-design">How we design</a>
+      <a href="/#our-story">Our story</a>
     </nav>
 
     <div class="header__actions">
-      <a href="/index.html#coleccion" class="btn btn--primary btn--sm">Shop now</a>
-      <button class="search-btn" id="searchBtn" aria-label="Search products">
-        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
+      <a href="/#shop" class="btn btn--primary btn--sm header__cta">Shop now</a>
       <button class="account-btn" id="accountBtn" aria-label="My account">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span class="account-btn__name" id="accountName" hidden></span>
@@ -43,137 +40,132 @@
         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
         <span class="cart-btn__count" id="cartCount" hidden>0</span>
       </button>
-      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
         <span></span><span></span><span></span>
       </button>
     </div>
   </div>
 </header>
 
-<div class="search-overlay" id="searchOverlay"></div>
-<div class="search-panel" id="searchPanel" aria-hidden="true">
-  <div class="container search-panel__inner">
-    <form class="search-panel__form" id="searchForm">
-      <svg class="search-panel__icon" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="search" id="searchInput" placeholder="Search the collection: t-shirt, hangboard, monoboard..." autocomplete="off">
-      <button type="button" class="search-panel__close" id="searchClose" aria-label="Close search">&times;</button>
-    </form>
-    <div class="search-panel__results" id="searchResults" hidden></div>
-  </div>
-</div>
-
 <main>
-  <div class="container pdp__crumb">
-    <a href="/index.html#coleccion" class="pdp__back">← Back to the collection</a>
-  </div>
-
   <div id="pdpLoading" class="pdp__status">Loading product…</div>
 
   <div id="pdpNotFound" class="pdp__status" hidden>
     <p>We couldn't find this product. It may no longer be available.</p>
-    <a href="/index.html#coleccion" class="btn btn--primary btn--sm">View the collection</a>
+    <a href="/#shop" class="btn btn--primary btn--sm">Shop the tools</a>
   </div>
 
-  <section class="pdp" id="pdp" hidden>
-    <div class="container pdp__layout">
-      <div class="pdp__media" id="pdpMedia"></div>
+  <!-- Plantilla única de ficha de producto: todos los campos llegan del admin -->
+  <section class="pdp2 pdp" id="pdp" hidden>
+    <div class="container pdp2__layout">
+      <!-- 1. Galería: principal 1:1 + 5 miniaturas 1:1 (IMG-01 a IMG-06 del producto) -->
+      <div class="pdp2__gallery">
+        <div class="pdp2__main" id="pdpMain"></div>
+        <div class="pdp2__thumbs" id="pdpThumbs"></div>
+      </div>
 
-      <div class="pdp__info">
-        <p class="eyebrow" id="pdpCategory"></p>
+      <div class="pdp2__info">
+        <!-- 2. Nombre, descripción, precio, botón y línea de stock -->
         <h1 id="pdpName"></h1>
-        <div class="pdp__price" id="pdpPrice"></div>
-        <p id="pdpMemberNote" class="product-card__member-note" hidden></p>
-        <p id="pdpDescription" class="pdp__description"></p>
-
-        <div class="pdp__form">
-          <label id="pdpSizeLabel" for="pdpSizeSelect" hidden>
-            Size
-            <select class="size-select" id="pdpSizeSelect" data-size-select=""></select>
-          </label>
+        <div class="pdp2__desc" id="pdpDescription"></div>
+        <div class="pdp2__buy">
+          <span class="pdp2__price" id="pdpPrice"></span>
           <button type="button" class="btn btn--primary" id="pdpAddBtn" data-add-to-cart="">Add to cart</button>
-          <p id="pdpStockNote" class="pdp__stock-note" hidden></p>
         </div>
+        <div id="pdpStockLine"></div>
+        <!-- 6. Enlaces de ayuda bajo el botón de compra -->
+        <p class="pdp2__help"><a href="/shipping-returns.html">Shipping &amp; returns</a> · <a href="/warranty.html">Warranty</a></p>
 
-        <ul class="pdp__trust">
-          <li>5-year warranty on seams</li>
-          <li>30-day on-the-rock trial</li>
-          <li>Free shipping in Europe from €60 · returns within 30 days</li>
-        </ul>
+        <!-- 3. Tabla de especificaciones (5 filas fijas, sin filas de carga máxima) -->
+        <div id="pdpSpecs"></div>
+
+        <!-- 4. Aviso de uso [provisional] -->
+        <aside class="notice" aria-label="Before you train">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <div>
+            <h3>Before you train</h3>
+            <ul>
+              <li>Check the tool and its attachment before every session. Stop if you see cracks, deformation or movement in the mount.</li>
+              <li>Build load gradually and stop if you feel pain.</li>
+              <li>If you're training after an injury, talk to a physiotherapist or doctor first. RAWGAT tools support training; they don't diagnose, treat or prevent injuries.</li>
+            </ul>
+          </div>
+        </aside>
       </div>
     </div>
   </section>
 
-  <section class="pdp-reviews" id="pdpReviews" hidden>
-    <div class="container pdp-reviews__inner">
-      <div class="pdp-reviews__head">
-        <p class="eyebrow">Reviews</p>
-        <h2>What buyers are saying</h2>
-        <p class="pdp-reviews__summary" id="reviewsSummary"></p>
+  <!-- 5. Reseñas del producto: el mismo estado vacío de la portada -->
+  <section class="pdp2-reviews" id="pdpReviews" hidden>
+    <div class="container pdp2-reviews__inner">
+      <div class="section-head section-head--center">
+        <p class="eyebrow">REVIEWS</p>
       </div>
-      <div id="pdpReviewForm"></div>
-      <div id="reviewsList"></div>
-    </div>
-  </section>
-
-  <section class="pdp-related" id="pdpRelated" hidden>
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">You might also like</p>
-        <h2>More from the collection</h2>
-      </div>
-      <div class="collection__grid" id="relatedGrid" data-tilt-root></div>
+      <p class="reviews__empty" id="reviewsEmpty">No reviews yet. RAWGAT is just getting started, and every review here will come from a verified buyer.</p>
+      <div class="reviews__grid" id="reviewsList" hidden></div>
+      <div id="pdpReviewForm" class="pdp2-reviews__form"></div>
+      <p class="reviews__note">Only customers who bought the product can review it. We publish every review, positive or negative, unless it contains abuse or personal data.</p>
     </div>
   </section>
 </main>
 
+<!-- 10. Pie de página -->
 <footer class="footer">
   <div class="container footer__inner">
     <div class="footer__brand">
-      <a href="/index.html#inicio" class="brand">
-        <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
-        <span class="brand__name">RAWGAT</span>
-      </a>
-      <p>Built to last. Made to climb.</p>
+      <a href="/" aria-label="RAWGAT home"><img src="/assets/img/brand/rawgat-logo-white.svg" alt="RAWGAT" class="footer__logo"></a>
+      <p>Designed by a Chilean climber. Made in Spain.</p>
+      <!-- Hueco para un solo icono (Instagram), oculto hasta que exista la cuenta -->
+      <div class="footer__social" id="footerSocial" hidden></div>
     </div>
-
     <div class="footer__col">
       <h4>Shop</h4>
-      <a href="/index.html#coleccion">Collection</a>
-      <a href="/index.html#coleccion">T-Shirts</a>
-      <a href="/index.html#coleccion">Accessories</a>
+      <div class="footer__links" id="footerShopLinks"></div>
     </div>
-
-    <div class="footer__col">
-      <h4>Brand</h4>
-      <a href="/index.html#historia">Our story</a>
-      <a href="/index.html#tecnologia">Technology</a>
-      <a href="/index.html#opiniones">Reviews</a>
-    </div>
-
     <div class="footer__col">
       <h4>Help</h4>
-      <a href="/index.html#contacto">Contact</a>
-      <a href="/index.html#contacto">Shipping & returns</a>
-      <a href="/garantia.html">Warranty</a>
-      <a href="/guia-tallas.html">Size guide</a>
-      <a href="/guia-cuidado.html">Garment care</a>
+      <a href="/shipping-returns.html">Shipping &amp; returns</a>
+      <a href="/warranty.html">Warranty</a>
+      <a href="#" data-pending-page>FAQ</a>
+      <a href="#" data-pending-page>Contact</a>
     </div>
-
-    <div class="footer__col footer__social">
-      <h4>Follow us</h4>
-      <div class="social-links">
-        <a href="#" aria-label="Instagram">IG</a>
-        <a href="#" aria-label="TikTok">TT</a>
-        <a href="#" aria-label="Strava">ST</a>
-      </div>
+    <div class="footer__col">
+      <h4>Legal</h4>
+      <a href="/privacidad.html">Privacy policy</a>
+      <a href="/terminos.html">Terms</a>
     </div>
   </div>
   <div class="container footer__bottom">
-    <span>© 2026 RAWGAT. All rights reserved.</span>
-    <span class="footer__legal-links"><a href="/privacidad.html">Privacy policy</a> · <a href="/terminos.html">Terms & conditions</a></span>
-    <span>Made in Chile for climbers around the world.</span>
+    <span>© 2026 RAWGAT</span>
   </div>
 </footer>
+<div class="account-overlay" id="accountOverlay"></div>
+<aside class="account-drawer" id="accountDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>My account</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Close account">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="accountBody"></div>
+</aside>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Your cart</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Close cart">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="cartBody">
+    <p class="cart-drawer__empty">Your cart is empty.</p>
+  </div>
+  <div class="cart-drawer__footer" id="cartFooter" hidden>
+    <div class="cart-drawer__total">
+      <span>Total</span>
+      <strong id="cartTotal">€0.00</strong>
+    </div>
+    <div id="paypalButtons"></div>
+    <p class="cart-drawer__demo-note">Test payment (PayPal Sandbox) — no real charges are made.</p>
+  </div>
+</aside>
 
 <div class="account-overlay" id="accountOverlay"></div>
 <aside class="account-drawer" id="accountDrawer" aria-hidden="true">

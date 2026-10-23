@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipping & returns — RAWGAT</title>
+<meta name="description" content="Shipping to Spain and all EU countries. 14-day returns, no reason needed.">
+<link rel="icon" type="image/svg+xml" href="/assets/img/brand/rawgat-icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- 1. Barra superior -->
+<div class="topbar" id="topbar">Designed and 3D printed in Spain.</div>
+
+<!-- 2. Cabecera y menú -->
+<header class="header" id="header">
+  <div class="container header__inner">
+    <!-- [provisional] icono + palabra RAWGAT en línea, hasta que Bastián confirme la versión de cabecera -->
+    <a href="/" class="brand" aria-label="RAWGAT home">
+      <img src="/assets/img/brand/rawgat-icon.svg" alt="" class="brand__logo">
+      <span class="brand__name">RAWGAT</span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="/#shop">Shop</a>
+      <a href="/#how-we-design">How we design</a>
+      <a href="/#our-story">Our story</a>
+    </nav>
+
+    <div class="header__actions">
+      <a href="/#shop" class="btn btn--primary btn--sm header__cta">Shop now</a>
+      <button class="account-btn" id="accountBtn" aria-label="My account">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="account-btn__name" id="accountName" hidden></span>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="View cart">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
+        <span class="cart-btn__count" id="cartCount" hidden>0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <article class="page">
+    <div class="container page__inner">
+      <img src="/assets/img/brand/rawgat-logo-dark.svg" alt="RAWGAT" class="page__logo">
+      <h1>Shipping &amp; returns</h1>
+      <p>We ship to Spain and all EU countries. Delivery times and costs are shown at checkout, before you pay. You can return your order within 14 days of delivery, no reason needed.</p>
+      <!-- Hueco: tabla de envíos por zona, vacía hasta tener los datos -->
+      <table class="zone-table" id="zoneTable">
+        <thead><tr><th scope="col">Destination</th><th scope="col">Delivery time</th><th scope="col">Cost</th></tr></thead>
+        <tbody>
+          <tr class="zone-table__slot"><td><span class="skeleton"></span></td><td><span class="skeleton"></span></td><td><span class="skeleton"></span></td></tr>
+          <tr class="zone-table__slot"><td><span class="skeleton"></span></td><td><span class="skeleton"></span></td><td><span class="skeleton"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</main>
+
+<!-- 10. Pie de página -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <a href="/" aria-label="RAWGAT home"><img src="/assets/img/brand/rawgat-logo-white.svg" alt="RAWGAT" class="footer__logo"></a>
+      <p>Designed by a Chilean climber. Made in Spain.</p>
+      <!-- Hueco para un solo icono (Instagram), oculto hasta que exista la cuenta -->
+      <div class="footer__social" id="footerSocial" hidden></div>
+    </div>
+    <div class="footer__col">
+      <h4>Shop</h4>
+      <div class="footer__links" id="footerShopLinks"></div>
+    </div>
+    <div class="footer__col">
+      <h4>Help</h4>
+      <a href="/shipping-returns.html">Shipping &amp; returns</a>
+      <a href="/warranty.html">Warranty</a>
+      <a href="#" data-pending-page>FAQ</a>
+      <a href="#" data-pending-page>Contact</a>
+    </div>
+    <div class="footer__col">
+      <h4>Legal</h4>
+      <a href="/privacidad.html">Privacy policy</a>
+      <a href="/terminos.html">Terms</a>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© 2026 RAWGAT</span>
+  </div>
+</footer>
+
+<div class="account-overlay" id="accountOverlay"></div>
+<aside class="account-drawer" id="accountDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>My account</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Close account">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="accountBody"></div>
+</aside>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Your cart</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Close cart">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="cartBody">
+    <p class="cart-drawer__empty">Your cart is empty.</p>
+  </div>
+  <div class="cart-drawer__footer" id="cartFooter" hidden>
+    <div class="cart-drawer__total">
+      <span>Total</span>
+      <strong id="cartTotal">€0.00</strong>
+    </div>
+    <div id="paypalButtons"></div>
+    <p class="cart-drawer__demo-note">Test payment (PayPal Sandbox) — no real charges are made.</p>
+  </div>
+</aside>
+
+
+<div class="account-overlay" id="accountOverlay"></div>
+<aside class="account-drawer" id="accountDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>My account</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Close account">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="accountBody"></div>
+</aside>
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-drawer__header">
+    <h3>Your cart</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Close cart">&times;</button>
+  </div>
+  <div class="cart-drawer__body" id="cartBody">
+    <p class="cart-drawer__empty">Your cart is empty.</p>
+  </div>
+  <div class="cart-drawer__footer" id="cartFooter" hidden>
+    <div class="cart-drawer__total">
+      <span>Total</span>
+      <strong id="cartTotal">€0.00</strong>
+    </div>
+    <div id="paypalButtons"></div>
+    <p class="cart-drawer__demo-note">Test payment (PayPal Sandbox) — no real charges are made.</p>
+  </div>
+</aside>
+
+<script src="/js/shared.js"></script>
+</body>
+</html>
