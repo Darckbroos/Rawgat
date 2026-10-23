@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>RAWGAT — Panel interno</title>
-<link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
+<link rel="icon" type="image/svg+xml" href="/assets/img/brand/rawgat-icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/admin/admin.css">
 </head>
@@ -15,17 +15,22 @@
 
   <aside class="admin-sidebar">
     <div class="admin-sidebar__brand">
-      <img src="/assets/img/logo.svg" alt="RAWGAT">
-      <span>RAWGAT<br><small>Panel interno</small></span>
+      <img src="/assets/img/brand/rawgat-logo-white.svg" alt="RAWGAT">
+      <span class="admin-sidebar__tag">Panel interno</span>
     </div>
-    <nav class="admin-nav">
+    <nav class="admin-nav" aria-label="Secciones del panel">
+      <span class="admin-nav__group">Negocio</span>
       <button class="admin-nav__link is-active" data-section="resumen">Resumen</button>
       <button class="admin-nav__link" data-section="contabilidad">Contabilidad</button>
-      <button class="admin-nav__link" data-section="clientes">Clientes</button>
-      <button class="admin-nav__link" data-section="resenas">Reseñas</button>
-      <button class="admin-nav__link" data-section="sucursales">Sucursales</button>
+      <span class="admin-nav__group">Tienda</span>
       <button class="admin-nav__link" data-section="productos">Productos</button>
       <button class="admin-nav__link" data-section="descuentos">Descuentos</button>
+      <span class="admin-nav__group">Comunidad</span>
+      <button class="admin-nav__link" data-section="clientes">Clientes</button>
+      <button class="admin-nav__link" data-section="resenas">Reseñas</button>
+      <button class="admin-nav__link" data-section="newsletter">Newsletter</button>
+      <span class="admin-nav__group">Sistema</span>
+      <button class="admin-nav__link" data-section="sucursales">Sucursales</button>
       <button class="admin-nav__link" data-section="respaldo">Respaldo</button>
       <button class="admin-nav__link" data-section="seguridad">Seguridad</button>
     </nav>
@@ -250,7 +255,7 @@
     <section class="admin-section" id="section-productos">
       <header class="admin-section__head">
         <h1>Productos</h1>
-        <p>Estos productos son los que se muestran en la colección de la página principal.</p>
+        <p>Los productos activos llenan los 2 lugares de "Two tools. One purpose." en la portada, por orden de alta. Debajo del nombre ves cuántas fotos y especificaciones tiene cargadas cada uno.</p>
       </header>
 
       <button class="btn btn--primary btn--sm" id="newProductBtn">+ Nuevo producto</button>
@@ -277,7 +282,7 @@
     <section class="admin-section" id="section-descuentos">
       <header class="admin-section__head">
         <h1>Descuentos</h1>
-        <p>El descuento "Todo el sitio" se muestra en la barra superior y en la portada. Los de categoría o producto solo aparecen en las tarjetas correspondientes. Solo puede haber un descuento de "Todo el sitio" activo a la vez: activar uno nuevo desactiva automáticamente el anterior.</p>
+        <p>Los descuentos se aplican al precio de clientes registrados. El que elijas en Newsletter es el código que recibe cada suscriptor. Solo puede haber un descuento de "Todo el sitio" activo a la vez: activar uno nuevo desactiva automáticamente el anterior.</p>
       </header>
 
       <button class="btn btn--primary btn--sm" id="newDiscountBtn">+ Nuevo descuento</button>
@@ -297,11 +302,51 @@
       </table>
     </section>
 
+    <!-- NEWSLETTER -->
+    <section class="admin-section" id="section-newsletter">
+      <header class="admin-section__head">
+        <h1>Newsletter</h1>
+        <p>Altas del formulario "Join the list" de la portada. Cada persona confirma su email (doble opt-in) y, al confirmar, recibe el código del descuento que elijas abajo. Desde cada email se puede dar de baja.</p>
+      </header>
+
+      <div class="stat-cards">
+        <article class="stat-card"><span class="stat-card__label">Confirmados</span><strong id="nlConfirmed">—</strong></article>
+        <article class="stat-card"><span class="stat-card__label">Sin confirmar</span><strong id="nlPending">—</strong></article>
+        <article class="stat-card"><span class="stat-card__label">De baja</span><strong id="nlUnsubscribed">—</strong></article>
+        <article class="stat-card"><span class="stat-card__label">Confirmados sin código</span><strong id="nlAwaitingCode">—</strong></article>
+      </div>
+
+      <div id="nlWarnings"></div>
+
+      <div class="backup-grid">
+        <div class="backup-card">
+          <h3>Código que se envía</h3>
+          <p>Descuento (de la sección Descuentos) que recibe cada persona al confirmar.</p>
+          <select id="nlDiscountSelect" class="admin-select"></select>
+        </div>
+        <div class="backup-card">
+          <h3>Acciones</h3>
+          <p>Enviar el código a quienes confirmaron antes de que hubiera uno asignado, o descargar la lista.</p>
+          <div class="button-row">
+            <button class="btn btn--primary btn--sm" id="nlSendPendingBtn">Enviar códigos pendientes</button>
+            <button class="btn btn--ghost btn--sm" id="nlExportBtn">Exportar CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <table class="admin-table" id="subscribersTable">
+        <thead>
+          <tr><th>Email</th><th>Estado</th><th>Alta</th><th>Confirmado</th><th>Código enviado</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
     <!-- RESPALDO -->
     <section class="admin-section" id="section-respaldo">
       <header class="admin-section__head">
         <h1>Respaldo de datos</h1>
-        <p>Productos, stock, descuentos, sucursales y contabilidad — sin la cuenta admin, que es propia de cada entorno. Útil para pasar los datos de este entorno a producción (o para tener un respaldo aparte).</p>
+        <p>Productos, stock, descuentos, sucursales, contabilidad, clientes, reseñas y newsletter — sin la cuenta admin, que es propia de cada entorno. Útil para pasar los datos de este entorno a producción (o para tener un respaldo aparte).</p>
       </header>
 
       <div class="backup-grid">

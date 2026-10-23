@@ -40,6 +40,9 @@ const customerLimiter = createLoginLimiter();
 // (no solo los fallidos): sin esto, alguien podía crear cuentas sin límite
 // para farmear el descuento de bienvenida.
 const registrationLimiter = createLoginLimiter();
+// Altas a la newsletter: cuenta cada intento por IP, para que el formulario
+// no se pueda usar para mandar emails de confirmación en masa.
+const newsletterLimiter = createLoginLimiter();
 
 function verifyLogin(username, password) {
   const admin = db.getAdmin();
@@ -68,6 +71,7 @@ module.exports = {
   clearAttempts: adminLimiter.clearAttempts,
   customerLimiter,
   registrationLimiter,
+  newsletterLimiter,
   verifyLogin,
   requireAuth,
   requireAuthPage,

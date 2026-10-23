@@ -18,6 +18,12 @@ async function api(url, options = {}) {
   return res.json();
 }
 
+// Todo lo que viene de fuera (nombres y reseñas de clientes, emails de la
+// newsletter, datos de producto) se escapa antes de meterlo en innerHTML.
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const money = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
 const CATEGORIES = ['Pants', 'T-Shirts', 'Accessories', 'Tech'];
 const AUDIENCES = ['Men', 'Women', 'Kids', 'Unisex'];
@@ -35,6 +41,44 @@ function packSizesFromValues(values) {
   const packed = { ...values, sizes };
   SIZE_CODES.forEach(code => delete packed[`size_${code}`]);
   return packed;
+}
+
+// Especificaciones (5 filas fijas) y galería (IMG-02 a IMG-06): igual que
+// con las tallas, el modal manda inputs sueltos y acá se juntan.
+const SPEC_FIELDS = [
+  ['edges', 'Edges (cantos)'],
+  ['dimensions', 'Dimensions (medidas)'],
+  ['weight', 'Weight (peso)'],
+  ['material', 'Material'],
+  ['mounting', 'Mounting (montaje)']
+];
+const GALLERY_SLOTS = 5;
+
+function packProductValues(values) {
+  const packed = packSizesFromValues(values);
+  packed.specs = {};
+  SPEC_FIELDS.forEach(([key]) => {
+    packed.specs[key] = (values[`spec_${key}`] || '').trim();
+    delete packed[`spec_${key}`];
+  });
+  packed.gallery = [];
+  for (let i = 1; i <= GALLERY_SLOTS; i++) {
+    if (values[`gallery_${i}`]) packed.gallery.push(values[`gallery_${i}`]);
+    delete packed[`gallery_${i}`];
+  }
+  return packed;
+}
+
+function imageFieldHtml(name, value, emptyLabel = 'Sin imagen') {
+  return `
+    <span class="image-field">
+      <span class="image-field__preview" data-image-preview>${value ? `<img src="${esc(value)}" alt="">` : `<span class="image-field__empty">${esc(emptyLabel)}</span>`}</span>
+      <span class="image-field__actions">
+        <label class="image-field__upload">Subir foto<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-image-upload></label>
+        <button type="button" class="image-field__clear" data-image-clear ${value ? '' : 'hidden'}>Quitar</button>
+      </span>
+      <input type="hidden" name="${name}" value="${esc(value)}">
+    </span>`;
 }
 
 // ---------------- LOGIN PAGE ----------------
@@ -265,7 +309,7 @@ if (page === 'dashboard') {
         <tr>
           <td>
             <span class="category-dot" style="background:${productColor(i)}"></span>
-            ${p.name}
+            ${esc(p.name)}
             ${p.active === false ? ' <span class="badge badge--off">Oculto</span>' : ''}
             ${topUnits > 0 && p.unitsSold === topUnits ? ' <span class="badge badge--on">Más vendido</span>' : ''}
           </td>
@@ -294,7 +338,12 @@ if (page === 'dashboard') {
     modalTitle.textContent = title;
     modalFields.innerHTML = '';
     fields.forEach(field => {
-      const label = document.createElement('label');
+      // Los campos compuestos (fotos, galería, especificaciones, tallas) van
+      // en un <div>: dentro de un <label> cualquier clic abriría el primer
+      // selector de archivo del grupo.
+      const isGroup = ['image', 'gallery', 'specs', 'sizes'].includes(field.type);
+      const label = document.createElement(isGroup ? 'div' : 'label');
+      if (isGroup) label.className = `field-group field-group--${field.type}`;
       label.dataset.field = field.name;
       const value = initialValues && initialValues[field.name] !== undefined ? initialValues[field.name] : '';
       if (field.type === 'checkbox') {
@@ -307,21 +356,36 @@ if (page === 'dashboard') {
         }).join('');
         label.innerHTML = `${field.label}<select name="${field.name}">${opts}</select>`;
       } else if (field.type === 'textarea') {
-        label.innerHTML = `${field.label}<textarea name="${field.name}" rows="3">${value}</textarea>`;
+        label.innerHTML = `${field.label}<textarea name="${field.name}" rows="3">${esc(value)}</textarea>`;
       } else if (field.type === 'image') {
+        label.innerHTML = `<span class="field-group__title">${field.label}</span>${field.hint ? `<small class="field-hint">${esc(field.hint)}</small>` : ''}${imageFieldHtml(field.name, value)}`;
+      } else if (field.type === 'gallery') {
+        const gallery = (initialValues && Array.isArray(initialValues.gallery)) ? initialValues.gallery : [];
         label.innerHTML = `
-          ${field.label}
-          <span class="image-field">
-            <span class="image-field__preview" data-image-preview>${value ? `<img src="${value}" alt="">` : '<span class="image-field__empty">Sin imagen</span>'}</span>
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-image-upload>
-            <input type="hidden" name="${field.name}" value="${value}">
-          </span>
-        `;
+          <span class="field-group__title">${field.label}</span>${field.hint ? `<small class="field-hint">${esc(field.hint)}</small>` : ''}
+          <span class="gallery-field">
+            ${Array.from({ length: GALLERY_SLOTS }, (_, i) => `
+              <span class="gallery-field__item">
+                <span class="gallery-field__id">IMG-0${i + 2}</span>
+                ${imageFieldHtml(`gallery_${i + 1}`, gallery[i] || '', 'Vacía')}
+              </span>`).join('')}
+          </span>`;
+      } else if (field.type === 'specs') {
+        const specs = (initialValues && initialValues.specs) || {};
+        label.innerHTML = `
+          <span class="field-group__title">${field.label}</span>${field.hint ? `<small class="field-hint">${esc(field.hint)}</small>` : ''}
+          <span class="specs-field">
+            ${SPEC_FIELDS.map(([key, specLabel]) => `
+              <span class="specs-field__row">
+                <span class="specs-field__label">${specLabel}</span>
+                <input type="text" maxlength="120" name="spec_${key}" value="${esc(specs[key] || '')}" placeholder="—">
+              </span>`).join('')}
+          </span>`;
       } else if (field.type === 'sizes') {
         const sizesArr = (initialValues && initialValues.sizes) || [];
         const stockByLabel = Object.fromEntries(sizesArr.map(s => [s.size, s.stock]));
         label.innerHTML = `
-          ${field.label}
+          <span class="field-group__title">${field.label}</span>
           <span class="sizes-field">
             ${SIZE_CODES.map(code => `
               <span class="sizes-field__item">
@@ -332,14 +396,26 @@ if (page === 'dashboard') {
           </span>
         `;
       } else {
-        label.innerHTML = `${field.label}<input type="${field.type}" name="${field.name}" value="${value}" ${field.step ? `step="${field.step}"` : ''} ${field.required ? 'required' : ''}>`;
+        label.innerHTML = `${field.label}<input type="${field.type}" name="${field.name}" value="${esc(value)}" ${field.step ? `step="${field.step}"` : ''} ${field.required ? 'required' : ''}>`;
       }
       modalFields.appendChild(label);
     });
 
+    modalFields.querySelectorAll('[data-image-clear]').forEach(clearBtn => {
+      clearBtn.addEventListener('click', () => {
+        const wrap = clearBtn.closest('.image-field');
+        wrap.querySelector('input[type=hidden]').value = '';
+        wrap.querySelector('[data-image-upload]').value = '';
+        wrap.querySelector('[data-image-preview]').innerHTML = '<span class="image-field__empty">Sin imagen</span>';
+        clearBtn.hidden = true;
+      });
+    });
+
     modalFields.querySelectorAll('[data-image-upload]').forEach(fileInput => {
-      const preview = fileInput.previousElementSibling;
-      const hiddenInput = fileInput.nextElementSibling;
+      const wrap = fileInput.closest('.image-field');
+      const preview = wrap.querySelector('[data-image-preview]');
+      const hiddenInput = wrap.querySelector('input[type=hidden]');
+      const clearBtn = wrap.querySelector('[data-image-clear]');
       fileInput.addEventListener('change', async () => {
         const file = fileInput.files[0];
         if (!file) return;
@@ -351,7 +427,8 @@ if (page === 'dashboard') {
           const body = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(body.error || 'No se pudo subir la imagen');
           hiddenInput.value = body.url;
-          preview.innerHTML = `<img src="${body.url}" alt="">`;
+          preview.innerHTML = `<img src="${esc(body.url)}" alt="">`;
+          if (clearBtn) clearBtn.hidden = false;
         } catch (err) {
           preview.innerHTML = '<span class="image-field__empty">Sin imagen</span>';
           alert(err.message);
@@ -391,16 +468,25 @@ if (page === 'dashboard') {
 
   // ----- Products -----
   const PRODUCT_FIELDS = [
-    { name: 'image', label: 'Imagen del producto', type: 'image' },
+    { name: 'image', label: 'Foto principal (IMG-01)', hint: 'Cuadrada 1:1, fondo claro. Se usa en la tarjeta de la portada y como foto grande de la ficha.', type: 'image' },
+    { name: 'gallery', label: 'Galería de la ficha (IMG-02 a IMG-06)', hint: 'Hasta 5 fotos cuadradas 1:1. Los huecos vacíos se muestran como hueco en la ficha.', type: 'gallery' },
     { name: 'name', label: 'Nombre', type: 'text', required: true },
-    { name: 'description', label: 'Descripción', type: 'textarea' },
+    { name: 'description', label: 'Descripción (una o dos frases)', type: 'textarea' },
     { name: 'price', label: 'Precio (EUR)', type: 'number', step: '0.01', required: true },
+    { name: 'specs', label: 'Especificaciones', hint: 'Se muestran en la tarjeta y en la ficha. Una fila vacía no aparece en la web.', type: 'specs' },
     { name: 'category', label: 'Categoría', type: 'select', options: CATEGORIES },
     { name: 'audience', label: 'Para', type: 'select', options: AUDIENCES },
     { name: 'sizes', label: 'Stock por talla ("Única" para productos sin talla, ej. accesorios)', type: 'sizes' },
     { name: 'tag', label: 'Etiqueta (ej. Nuevo, Más vendido)', type: 'text' },
     { name: 'active', label: 'Producto activo (visible en la tienda)', type: 'checkbox' }
   ];
+
+  // Cuánto de la ficha está cargado: ayuda a ver qué falta antes de activar.
+  function productCompleteness(p) {
+    const photos = (p.image ? 1 : 0) + (Array.isArray(p.gallery) ? p.gallery.length : 0);
+    const specs = p.specs ? SPEC_FIELDS.filter(([key]) => (p.specs[key] || '').trim()).length : 0;
+    return `${photos}/6 fotos · ${specs}/5 especificaciones`;
+  }
 
   function stockBadge(stock) {
     if (stock <= 0) return `<span class="badge badge--off">Agotado</span>`;
@@ -420,13 +506,13 @@ if (page === 'dashboard') {
     const tbody = document.querySelector('#productsTable tbody');
     tbody.innerHTML = products.map(p => `
       <tr data-id="${p.id}">
-        <td>${p.image ? `<img class="product-thumb" src="${p.image}" alt="">` : '<span class="product-thumb product-thumb--empty"></span>'}</td>
-        <td>${p.name}</td>
-        <td>${p.category}</td>
-        <td>${p.audience || 'Unisex'}</td>
+        <td>${p.image ? `<img class="product-thumb" src="${esc(p.image)}" alt="">` : '<span class="product-thumb product-thumb--empty"></span>'}</td>
+        <td><strong>${esc(p.name)}</strong><br><small class="muted">${productCompleteness(p)}</small></td>
+        <td>${esc(p.category)}</td>
+        <td>${esc(p.audience || 'Unisex')}</td>
         <td>${money(p.price)}</td>
         <td>${stockBadge(p.stock || 0)}</td>
-        <td>${p.tag || '—'}</td>
+        <td>${esc(p.tag || '—')}</td>
         <td><span class="badge ${p.active ? 'badge--on' : 'badge--off'}">${p.active ? 'Activo' : 'Oculto'}</span></td>
         <td class="actions">
           <button class="btn btn--ghost btn--sm" data-edit="${p.id}">Editar</button>
@@ -439,7 +525,7 @@ if (page === 'dashboard') {
       btn.addEventListener('click', () => {
         const product = products.find(p => p.id === Number(btn.dataset.edit));
         openModal('Editar producto', PRODUCT_FIELDS, product, async (values) => {
-          await api(`/admin/api/products/${product.id}`, { method: 'PUT', body: JSON.stringify(packSizesFromValues(values)) });
+          await api(`/admin/api/products/${product.id}`, { method: 'PUT', body: JSON.stringify(packProductValues(values)) });
           loadProducts();
         });
       });
@@ -454,8 +540,8 @@ if (page === 'dashboard') {
   }
 
   document.getElementById('newProductBtn').addEventListener('click', () => {
-    openModal('Nuevo producto', PRODUCT_FIELDS, { active: true, category: 'Pants', audience: 'Unisex' }, async (values) => {
-      await api('/admin/api/products', { method: 'POST', body: JSON.stringify(packSizesFromValues(values)) });
+    openModal('Nuevo producto', PRODUCT_FIELDS, { active: false, category: 'Accessories', audience: 'Unisex', specs: {}, gallery: [] }, async (values) => {
+      await api('/admin/api/products', { method: 'POST', body: JSON.stringify(packProductValues(values)) });
       loadProducts();
     });
   });
@@ -500,8 +586,8 @@ if (page === 'dashboard') {
   function discountScopeLabel(d, productById) {
     const scope = d.scope || 'all';
     if (scope === 'all') return 'Todo el sitio';
-    if (scope === 'category') return `Categoría: ${d.scopeValue || '—'}`;
-    if (scope === 'product') return `Producto: ${productById[d.scopeValue] || d.scopeValue || '—'}`;
+    if (scope === 'category') return `Categoría: ${esc(d.scopeValue || '—')}`;
+    if (scope === 'product') return `Producto: ${esc(productById[d.scopeValue] || d.scopeValue || '—')}`;
     return '—';
   }
 
@@ -522,7 +608,7 @@ if (page === 'dashboard') {
     const tbody = document.querySelector('#discountsTable tbody');
     tbody.innerHTML = discounts.map(d => `
       <tr data-id="${d.id}">
-        <td>${d.code}</td>
+        <td>${esc(d.code)}</td>
         <td>${discountScopeLabel(d, productById)}</td>
         <td>${d.percent}%</td>
         <td>${d.expiresAt ? new Date(d.expiresAt).toLocaleDateString('es-ES') : '—'}</td>
@@ -574,7 +660,7 @@ if (page === 'dashboard') {
     const select = document.getElementById('acctBranchFilter');
     const current = select.value;
     select.innerHTML = '<option value="">Todas las sucursales</option>' +
-      branchesCache.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+      branchesCache.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
     select.value = current;
   }
 
@@ -589,8 +675,8 @@ if (page === 'dashboard') {
     const tbody = document.querySelector('#branchesTable tbody');
     tbody.innerHTML = branchesCache.map(b => `
       <tr data-id="${b.id}">
-        <td>${b.name}${b.type === 'online' ? ' <span class="badge badge--on">En línea</span>' : ''}</td>
-        <td>${b.address || '—'}</td>
+        <td>${esc(b.name)}${b.type === 'online' ? ' <span class="badge badge--on">En línea</span>' : ''}</td>
+        <td>${esc(b.address || '—')}</td>
         <td><span class="badge ${b.active ? 'badge--on' : 'badge--off'}">${b.active ? 'Activa' : 'Inactiva'}</span></td>
         <td class="actions">
           <button class="btn btn--ghost btn--sm" data-edit="${b.id}">Editar</button>
@@ -647,10 +733,10 @@ if (page === 'dashboard') {
     const tbody = document.querySelector('#customersTable tbody');
     tbody.innerHTML = customers.map(c => `
       <tr data-id="${c.id}">
-        <td>${c.name}</td>
-        <td>${c.email}</td>
-        <td>${c.phone || '—'}</td>
-        <td>${c.address || '—'}</td>
+        <td>${esc(c.name)}</td>
+        <td>${esc(c.email)}</td>
+        <td>${esc(c.phone || '—')}</td>
+        <td>${esc(c.address || '—')}</td>
         <td>${new Date(c.createdAt).toLocaleDateString('es-ES')}</td>
         <td><span class="badge ${c.emailVerified ? 'badge--on' : 'badge--off'}">${c.emailVerified ? 'Confirmado' : 'Sin confirmar'}</span></td>
         <td><span class="badge ${c.welcomeDiscountRedeemed ? 'badge--off' : 'badge--on'}">${c.welcomeDiscountRedeemed ? 'Usado' : `${c.welcomeDiscountPercent}% disponible`}</span></td>
@@ -684,10 +770,10 @@ if (page === 'dashboard') {
     const tbody = document.querySelector('#reviewsTable tbody');
     tbody.innerHTML = reviews.map(r => `
       <tr data-id="${r.id}">
-        <td>${r.productName}</td>
-        <td>${r.customerName}</td>
+        <td>${esc(r.productName)}</td>
+        <td>${esc(r.customerName)}</td>
         <td>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
-        <td>${r.text.length > 80 ? `${r.text.slice(0, 80)}…` : r.text}</td>
+        <td>${esc(r.text.length > 80 ? `${r.text.slice(0, 80)}…` : r.text)}</td>
         <td>${new Date(r.createdAt).toLocaleDateString('es-ES')}</td>
         <td class="actions">
           <button class="btn btn--danger btn--sm" data-delete="${r.id}">Eliminar</button>
@@ -705,6 +791,97 @@ if (page === 'dashboard') {
   }
 
   loadReviews();
+
+  // ----- Newsletter -----
+  // Suscriptores con doble opt-in (server/routes/newsletter.js). El código
+  // que reciben al confirmar es el descuento que se elija acá.
+  const SUB_STATUS = {
+    pending: ['badge--warn', 'Sin confirmar'],
+    confirmed: ['badge--on', 'Confirmado'],
+    unsubscribed: ['badge--off', 'De baja']
+  };
+  const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('es-ES') : '—');
+
+  async function loadNewsletter() {
+    let info, discounts;
+    try {
+      [info, discounts] = await Promise.all([api('/admin/api/newsletter'), api('/admin/api/discounts')]);
+    } catch (err) {
+      console.error('No se pudo cargar la newsletter', err);
+      document.querySelector('#subscribersTable tbody').innerHTML = '<tr><td colspan="6">No se pudo cargar la información.</td></tr>';
+      return;
+    }
+    const { counts } = info;
+    document.getElementById('nlConfirmed').textContent = counts.confirmed;
+    document.getElementById('nlPending').textContent = counts.pending;
+    document.getElementById('nlUnsubscribed').textContent = counts.unsubscribed;
+    document.getElementById('nlAwaitingCode').textContent = counts.awaitingCode;
+
+    const select = document.getElementById('nlDiscountSelect');
+    select.innerHTML = '<option value="">— Ninguno (no se envía código) —</option>' + discounts.map(d =>
+      `<option value="${d.id}" ${info.settings.discountId === d.id ? 'selected' : ''}>${esc(d.code)} · ${Number(d.percent) || 0}%${d.active ? '' : ' (inactivo)'}</option>`
+    ).join('');
+
+    const warnings = [];
+    if (!info.emailConfigured) warnings.push('El envío de emails no está configurado (falta RESEND_API_KEY en .env). Las altas se guardan, pero no salen los emails de confirmación ni los códigos.');
+    if (!info.settings.discountId) warnings.push('No hay ningún descuento asignado: quien confirme no recibirá código. La portada promete "15% off our first batch".');
+    if (info.discountConfiguredButInactive) warnings.push('El descuento asignado está inactivo o vencido: no se envía a nadie hasta que vuelva a estar activo.');
+    const warnEl = document.getElementById('nlWarnings');
+    warnEl.innerHTML = warnings.map(w => `<p class="notice-box">${esc(w)}</p>`).join('');
+
+    document.getElementById('nlSendPendingBtn').disabled = !info.discount || counts.awaitingCode === 0;
+
+    const tbody = document.querySelector('#subscribersTable tbody');
+    tbody.innerHTML = info.subscribers.map(sub => {
+      const [badgeClass, badgeLabel] = SUB_STATUS[sub.status] || ['badge--off', sub.status];
+      return `
+        <tr data-id="${sub.id}">
+          <td>${esc(sub.email)}</td>
+          <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+          <td>${fmtDate(sub.createdAt)}</td>
+          <td>${fmtDate(sub.confirmedAt)}</td>
+          <td>${sub.codeSentAt ? `${esc(sub.codeSent)} · ${fmtDate(sub.codeSentAt)}` : '—'}</td>
+          <td class="actions"><button class="btn btn--danger btn--sm" data-delete="${sub.id}">Eliminar</button></td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6">Todavía no hay suscriptores.</td></tr>';
+
+    tbody.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar este suscriptor? Se borra su email y su historial de consentimiento.')) return;
+        await api(`/admin/api/newsletter/subscribers/${btn.dataset.delete}`, { method: 'DELETE' });
+        loadNewsletter();
+
+      });
+    });
+  }
+
+  document.getElementById('nlDiscountSelect').addEventListener('change', async (e) => {
+    try {
+      await api('/admin/api/newsletter/settings', { method: 'PUT', body: JSON.stringify({ discountId: e.target.value || null }) });
+    } catch (err) {
+      alert(err.message);
+    }
+    loadNewsletter();
+  });
+
+  document.getElementById('nlSendPendingBtn').addEventListener('click', async () => {
+    if (!confirm('¿Enviar el código a todos los suscriptores confirmados que aún no lo recibieron?')) return;
+    try {
+      const r = await api('/admin/api/newsletter/send-pending-codes', { method: 'POST' });
+      alert(r.emailConfigured
+        ? `Enviados: ${r.sent} de ${r.total}${r.failed ? ` · fallaron ${r.failed}` : ''}.`
+        : 'No se envió nada: falta configurar RESEND_API_KEY.');
+    } catch (err) {
+      alert(err.message);
+    }
+    loadNewsletter();
+  });
+
+  document.getElementById('nlExportBtn').addEventListener('click', () => {
+    window.location.href = '/admin/api/newsletter/export.csv';
+  });
+
+  loadNewsletter();
 
   document.getElementById('newBranchBtn').addEventListener('click', () => {
     openModal('Nueva sucursal', BRANCH_FIELDS, { active: true }, async (values) => {
@@ -787,13 +964,13 @@ if (page === 'dashboard') {
     tbody.innerHTML = pageItems.map(t => `
       <tr data-id="${t.id}">
         <td>${new Date(t.date).toLocaleDateString('es-ES')}</td>
-        <td>${branchById[t.branchId] || '—'}</td>
+        <td>${esc(branchById[t.branchId] || '—')}</td>
         <td><span class="badge ${t.type === 'income' ? 'badge--on' : 'badge--off'}">${t.type === 'income' ? 'Ingreso' : 'Gasto'}</span></td>
-        <td>${t.category}</td>
-        <td>${t.description || '—'}</td>
+        <td>${esc(t.category)}</td>
+        <td>${esc(t.description || '—')}</td>
         <td class="${t.type === 'income' ? 'stat-card--income' : 'stat-card--expense'}">${t.type === 'income' ? '+' : '−'} ${money(t.amount)}</td>
-        <td>${t.invoiceNumber || '—'}</td>
-        <td>${t.bankReference || '—'}</td>
+        <td>${esc(t.invoiceNumber || '—')}</td>
+        <td>${esc(t.bankReference || '—')}</td>
         <td class="actions">
           <button class="btn btn--ghost btn--sm" data-edit="${t.id}">Editar</button>
           <button class="btn btn--danger btn--sm" data-delete="${t.id}">Eliminar</button>
@@ -941,7 +1118,7 @@ if (page === 'dashboard') {
 
     document.getElementById('branchBreakdownBody').innerHTML = summary.byBranch.map(b => `
       <tr>
-        <td>${b.branchName}</td>
+        <td>${esc(b.branchName)}</td>
         <td class="stat-card--income">${money(b.income)}</td>
         <td class="stat-card--expense">${money(b.expenses)}</td>
         <td class="${b.net >= 0 ? 'net-positive' : 'net-negative'}">${money(b.net)}</td>

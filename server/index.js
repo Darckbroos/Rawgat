@@ -14,6 +14,7 @@ const analyticsRoutes = require('./routes/analytics');
 const checkoutRoutes = require('./routes/checkout');
 const accountingRoutes = require('./routes/accounting');
 const backupRoutes = require('./routes/backup');
+const newsletterRoutes = require('./routes/newsletter');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -77,6 +78,7 @@ app.use(analyticsRoutes);
 app.use(checkoutRoutes);
 app.use(accountingRoutes);
 app.use(backupRoutes);
+app.use(newsletterRoutes);
 
 // Ficha de producto: misma plantilla para cualquier :id, el producto en sí
 // se pide al API desde el navegador. 404 real (no solo en el cliente) si el

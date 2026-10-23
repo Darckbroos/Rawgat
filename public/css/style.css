@@ -1819,3 +1819,4 @@ p { margin: 0 0 1em; color: var(--stone); }
   .pdp2__thumbs .img-slot span { font-size: .48rem; white-space: nowrap; padding: 2px 4px; letter-spacing: 0; border: 0; }
 }
 .pdp2-reviews__form { text-align: center; margin: 8px 0 14px; }
+.newsletter__note--error { color: #ff9b8a; }

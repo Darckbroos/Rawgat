@@ -9,17 +9,16 @@ const pdpSection = document.getElementById('pdp');
 
 let currentProduct = null;
 
-// Galería: principal 1:1 + 5 miniaturas 1:1 (IMG-01 a IMG-06). Las fotos
-// vienen de p.gallery (lista de URLs) o, mientras el admin solo tenga una
-// imagen por producto, de p.image como principal. Lo que falta queda como
-// hueco con su ID.
+// Galería: principal 1:1 + 5 miniaturas 1:1 (IMG-01 a IMG-06). La principal
+// es p.image y las demás vienen de p.gallery (admin → Productos). Lo que
+// falta queda como hueco con su ID.
 const GALLERY_SIZE = 6;
 
 function galleryUrls(p) {
   if (!p) return [];
-  const list = Array.isArray(p.gallery) ? p.gallery.filter(Boolean) : [];
-  if (!list.length && p.image) list.push(p.image);
-  return list.slice(0, GALLERY_SIZE);
+  // IMG-01 = foto principal (p.image); IMG-02 a IMG-06 = p.gallery.
+  const extras = Array.isArray(p.gallery) ? p.gallery.filter(Boolean) : [];
+  return [p.image, ...extras].filter(Boolean).slice(0, GALLERY_SIZE);
 }
 
 function slotId(n) {
@@ -32,15 +31,17 @@ function renderGallery(p) {
   const main = document.getElementById('pdpMain');
   const thumbs = document.getElementById('pdpThumbs');
 
+  let activeIndex = 0;
   const showMain = (i) => {
+    activeIndex = i;
     main.innerHTML = urls[i]
       ? `<img src="${escapeHtml(urls[i])}" alt="${escapeHtml(name)}">`
       : imageSlotHtml(slotId(1), '1:1', 'light');
     thumbs.querySelectorAll('button').forEach(btn => btn.classList.toggle('is-active', Number(btn.dataset.index) === i));
   };
 
-  // Miniaturas = IMG-02 a IMG-06; si hay fotos, la primera también es miniatura
-  // para poder volver a ella.
+  // Miniaturas = IMG-02 a IMG-06. Volver a pulsar la miniatura activa
+  // devuelve la foto principal (IMG-01).
   const thumbHtml = [];
   for (let n = 2; n <= GALLERY_SIZE; n++) {
     const i = n - 1;
@@ -51,7 +52,9 @@ function renderGallery(p) {
   thumbs.innerHTML = thumbHtml.join('');
   thumbs.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-index]');
-    if (btn) showMain(Number(btn.dataset.index));
+    if (!btn) return;
+    const i = Number(btn.dataset.index);
+    showMain(activeIndex === i ? 0 : i);
   });
   showMain(0);
 }
