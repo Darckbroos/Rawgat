@@ -26,6 +26,33 @@ function normalizeSizes(input) {
   return SIZES.map(size => ({ size, stock: bySize.get(size) || 0 }));
 }
 
+// Las 5 filas fijas de especificaciones que muestra la tarjeta y la ficha
+// (informe de maquetación 23/10/2026). Solo se guardan estas claves.
+const SPEC_KEYS = ['edges', 'dimensions', 'weight', 'material', 'mounting'];
+const SPEC_MAX_LENGTH = 120;
+
+function normalizeSpecs(input) {
+  const specs = {};
+  SPEC_KEYS.forEach(key => {
+    const value = input && input[key] !== undefined && input[key] !== null ? String(input[key]).trim().slice(0, SPEC_MAX_LENGTH) : '';
+    specs[key] = value;
+  });
+  return specs;
+}
+
+// Galería: hasta 5 fotos extra (IMG-02 a IMG-06) además de la principal
+// ("image" = IMG-01). Solo se aceptan rutas de imágenes subidas por el admin.
+const GALLERY_MAX = 5;
+const UPLOAD_PATH_RE = /^\/assets\/img\/products\/[a-f0-9]{32}\.(jpg|png|webp|gif)$/;
+
+function normalizeGallery(input) {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map(url => String(url || '').trim())
+    .filter(url => UPLOAD_PATH_RE.test(url))
+    .slice(0, GALLERY_MAX);
+}
+
 function totalStock(product) {
   return (product.sizes || []).reduce((sum, s) => sum + s.stock, 0);
 }
@@ -118,13 +145,15 @@ function buildDefaultData() {
     branches,
     transactions,
     customers: [],
+    subscribers: [],
+    newsletter: { discountId: null },
     reviews: [
       { id: 1, productId: 1, customerName: 'Javiera M.', rating: 5, text: 'El pantalón Gastón aguantó tres días seguidos de fisuras en Cochamó sin una sola marca. Se mueve como una segunda piel.', createdAt: new Date().toISOString() },
       { id: 2, productId: 2, customerName: 'Camila S.', rating: 5, text: 'Compré el polerón para el invierno en el muro y ahora es lo único que uso también para trekking. Calidad brutal.', createdAt: new Date().toISOString() }
     ],
     _seq: {
       product: 5, discount: 2, visit: 1, purchase: purchases.length + 1,
-      branch: branches.length + 1, transaction: transactions.length + 1, customer: 1, review: 3
+      branch: branches.length + 1, transaction: transactions.length + 1, customer: 1, review: 3, subscriber: 1
     }
   };
 }
@@ -148,6 +177,8 @@ function load() {
     migrateProductSizes();
     migrateCustomers();
     migrateReviews();
+    migrateNewsletter();
+    repairSequences();
   }
   return data;
 }
@@ -233,6 +264,48 @@ function migrateReviews() {
     data._seq.review = data.reviews.reduce((max, r) => Math.max(max, r.id), 0) + 1;
     changed = true;
   }
+  if (changed) save();
+}
+
+// Añade la newsletter (suscriptores + ajustes) a bases de datos creadas antes
+// de que existiera, sin tocar el resto de los datos.
+function migrateNewsletter() {
+  let changed = false;
+  if (!Array.isArray(data.subscribers)) {
+    data.subscribers = [];
+    changed = true;
+  }
+  if (!data.newsletter || typeof data.newsletter !== 'object') {
+    data.newsletter = { discountId: null };
+    changed = true;
+  }
+  if (!data._seq.subscriber) {
+    data._seq.subscriber = data.subscribers.reduce((max, s) => Math.max(max, s.id), 0) + 1;
+    changed = true;
+  }
+  if (changed) save();
+}
+
+// Cada contador _seq debe quedar por encima del id más alto de su lista. Se
+// encontró una base con _seq.product = 12 y un producto con id 12: el
+// siguiente producto creado desde el admin habría repetido ese id (y editar
+// o borrar uno habría afectado al otro). Se repara al arrancar.
+const SEQ_LISTS = {
+  product: 'products', discount: 'discounts', visit: 'visits', purchase: 'purchases',
+  branch: 'branches', transaction: 'transactions', customer: 'customers', review: 'reviews',
+  subscriber: 'subscribers'
+};
+
+function repairSequences() {
+  let changed = false;
+  Object.entries(SEQ_LISTS).forEach(([seqKey, listKey]) => {
+    const list = Array.isArray(data[listKey]) ? data[listKey] : [];
+    const minNext = list.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+    if (!(data._seq[seqKey] >= minNext)) {
+      data._seq[seqKey] = minNext;
+      changed = true;
+    }
+  });
   if (changed) save();
 }
 
@@ -403,6 +476,8 @@ function addProduct(input) {
     tag: input.tag || '',
     icon: input.icon || 'shirt',
     image: input.image || null,
+    gallery: normalizeGallery(input.gallery),
+    specs: normalizeSpecs(input.specs),
     sizes: normalizeSizes(input.sizes),
     active: input.active !== false,
     createdAt: new Date().toISOString()
@@ -424,6 +499,8 @@ function updateProduct(id, input) {
     tag: input.tag ?? product.tag,
     icon: input.icon ?? product.icon,
     image: input.image !== undefined ? (input.image || null) : product.image,
+    gallery: input.gallery !== undefined ? normalizeGallery(input.gallery) : (product.gallery || []),
+    specs: input.specs !== undefined ? normalizeSpecs(input.specs) : normalizeSpecs(product.specs),
     sizes: input.sizes !== undefined ? normalizeSizes(input.sizes) : product.sizes,
     active: input.active !== undefined ? !!input.active : product.active
   });
@@ -897,9 +974,127 @@ function getAccountingSeries({ branchId, days = 30 } = {}) {
 }
 
 // ---------- Backup / restore ----------
+// ---------------- Newsletter ----------------
+// Doble opt-in: la suscripción nace "pending" y solo pasa a "confirmed"
+// cuando la persona abre el enlace del email. Cada suscriptor tiene además
+// un token de baja permanente para el enlace "Unsubscribe" de los emails.
+const SUBSCRIBER_TOKEN_TTL_MS = 48 * 60 * 60 * 1000;
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function randomToken() {
+  return crypto.randomBytes(24).toString('hex');
+}
+
+function getSubscribers() {
+  return [...data.subscribers].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function getSubscriberByEmail(email) {
+  const normalized = normalizeEmail(email);
+  return data.subscribers.find(s => s.email === normalized) || null;
+}
+
+// Alta o re-alta. Devuelve el suscriptor y si hace falta mandar el email de
+// confirmación (no cuando ya está confirmado: así no se puede usar el
+// formulario para mandar correos repetidos a una dirección ajena).
+function upsertPendingSubscriber(email, { consentText = '' } = {}) {
+  const normalized = normalizeEmail(email);
+  const now = new Date().toISOString();
+  let sub = data.subscribers.find(s => s.email === normalized);
+  if (sub && sub.status === 'confirmed') return { subscriber: sub, needsConfirmation: false };
+  if (!sub) {
+    sub = {
+      id: data._seq.subscriber++,
+      email: normalized,
+      status: 'pending',
+      createdAt: now,
+      confirmedAt: null,
+      unsubscribedAt: null,
+      codeSentAt: null,
+      codeSent: null,
+      unsubscribeToken: randomToken()
+    };
+    data.subscribers.push(sub);
+  }
+  sub.status = 'pending';
+  sub.unsubscribedAt = null;
+  sub.confirmToken = randomToken();
+  sub.confirmTokenExpiresAt = new Date(Date.now() + SUBSCRIBER_TOKEN_TTL_MS).toISOString();
+  sub.consentAt = now;
+  sub.consentText = String(consentText).slice(0, 300);
+  save();
+  return { subscriber: sub, needsConfirmation: true };
+}
+
+function confirmSubscriber(token) {
+  if (!token) return null;
+  const sub = data.subscribers.find(s => s.confirmToken && s.confirmToken === token);
+  if (!sub) return null;
+  if (new Date(sub.confirmTokenExpiresAt).getTime() < Date.now()) return { expired: true };
+  sub.status = 'confirmed';
+  sub.confirmedAt = new Date().toISOString();
+  delete sub.confirmToken;
+  delete sub.confirmTokenExpiresAt;
+  save();
+  return { subscriber: sub };
+}
+
+function unsubscribe(token) {
+  if (!token) return null;
+  const sub = data.subscribers.find(s => s.unsubscribeToken === token);
+  if (!sub) return null;
+  sub.status = 'unsubscribed';
+  sub.unsubscribedAt = new Date().toISOString();
+  delete sub.confirmToken;
+  delete sub.confirmTokenExpiresAt;
+  save();
+  return sub;
+}
+
+function markCodeSent(id, code) {
+  const sub = data.subscribers.find(s => s.id === Number(id));
+  if (!sub) return null;
+  sub.codeSentAt = new Date().toISOString();
+  sub.codeSent = code;
+  save();
+  return sub;
+}
+
+function deleteSubscriber(id) {
+  const index = data.subscribers.findIndex(s => s.id === Number(id));
+  if (index === -1) return false;
+  data.subscribers.splice(index, 1);
+  save();
+  return true;
+}
+
+function getNewsletterSettings() {
+  return { discountId: data.newsletter.discountId ?? null };
+}
+
+function updateNewsletterSettings(input) {
+  const id = input.discountId === null || input.discountId === '' || input.discountId === undefined ? null : Number(input.discountId);
+  if (id !== null && !data.discounts.some(d => d.id === id)) return { error: 'Ese descuento no existe' };
+  data.newsletter.discountId = id;
+  save();
+  return { settings: getNewsletterSettings() };
+}
+
+// El descuento que se envía a quien confirma la suscripción, solo si sigue
+// activo y sin vencer.
+function getNewsletterDiscount() {
+  const id = data.newsletter.discountId;
+  if (!id) return null;
+  const d = data.discounts.find(x => x.id === id);
+  return d && isLive(d) ? d : null;
+}
+
 // Todo lo que no sea la cuenta admin: así un respaldo se puede pasar de un
 // entorno a otro (dev -> producción) sin pisar la contraseña de ese entorno.
-const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', 'customers', 'reviews', '_seq'];
+const BACKUP_KEYS = ['products', 'discounts', 'visits', 'purchases', 'branches', 'transactions', 'customers', 'reviews', 'subscribers', 'newsletter', '_seq'];
 
 function exportData() {
   const snapshot = {};
@@ -913,7 +1108,7 @@ function exportData() {
 
 // "customers"/"reviews" son opcionales al importar: un respaldo generado
 // antes de que existieran esos módulos no debe rechazarse por eso.
-const OPTIONAL_BACKUP_KEYS = ['customers', 'reviews'];
+const OPTIONAL_BACKUP_KEYS = ['customers', 'reviews', 'subscribers', 'newsletter'];
 
 function importData(backup) {
   if (!backup || typeof backup !== 'object' || !backup.data || typeof backup.data !== 'object') {
@@ -924,10 +1119,12 @@ function importData(backup) {
     return { error: `Faltan datos en el respaldo: ${missing.join(', ')}` };
   }
   BACKUP_KEYS.forEach(key => {
-    data[key] = key in backup.data ? backup.data[key] : (OPTIONAL_BACKUP_KEYS.includes(key) ? [] : data[key]);
+    data[key] = key in backup.data ? backup.data[key] : (OPTIONAL_BACKUP_KEYS.includes(key) ? (key === 'newsletter' ? { discountId: null } : []) : data[key]);
   });
   migrateCustomers();
   migrateReviews();
+  migrateNewsletter();
+  repairSequences();
   save();
   return { ok: true };
 }
@@ -946,5 +1143,8 @@ module.exports = {
   ACCOUNTING_CATEGORIES,
   getTransactions, addTransaction, updateTransaction, deleteTransaction,
   getAccountingSummary, getAccountingSeries,
+  getSubscribers, getSubscriberByEmail, upsertPendingSubscriber, confirmSubscriber, unsubscribe,
+  markCodeSent, deleteSubscriber, getNewsletterSettings, updateNewsletterSettings, getNewsletterDiscount,
+  SPEC_KEYS,
   exportData, importData
 };

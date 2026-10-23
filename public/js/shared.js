@@ -85,12 +85,55 @@ document.addEventListener('click', (e) => {
 // ---------------- Newsletter (si la página tiene el formulario) ----------------
 const newsletterForm = document.getElementById('newsletterForm');
 const newsletterNote = document.getElementById('newsletterNote');
+// Mensajes del alta: [provisional] — pendientes de revisión por Marketing.
+const NEWSLETTER_MESSAGES = {
+  sent: 'Thanks! Check your email to confirm your subscription.',
+  confirmed: "You're on the list. Your code is on its way to your inbox.",
+  unsubscribed: "You've been unsubscribed. You won't get more emails from us.",
+  expired: 'That confirmation link has expired. Sign up again to get a new one.',
+  invalid: "That link isn't valid anymore.",
+  error: 'Something went wrong. Please try again in a few minutes.'
+};
+
+function showNewsletterNote(key, isError = false) {
+  if (!newsletterNote) return;
+  newsletterNote.textContent = NEWSLETTER_MESSAGES[key] || key;
+  newsletterNote.classList.toggle('newsletter__note--error', isError);
+  newsletterNote.hidden = false;
+}
+
 if (newsletterForm) {
-  newsletterForm.addEventListener('submit', (e) => {
+  newsletterForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    newsletterForm.reset();
-    if (newsletterNote) newsletterNote.hidden = false;
+    const button = newsletterForm.querySelector('button[type="submit"]');
+    const email = newsletterForm.email.value;
+    if (button) button.disabled = true;
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showNewsletterNote(body.error || 'error', true);
+      } else {
+        newsletterForm.reset();
+        showNewsletterNote('sent');
+      }
+    } catch {
+      showNewsletterNote('error', true);
+    } finally {
+      if (button) button.disabled = false;
+    }
   });
+
+  // Vuelta desde los enlaces del email (confirmar / darse de baja).
+  const newsletterStatus = new URLSearchParams(window.location.search).get('newsletter');
+  if (newsletterStatus && NEWSLETTER_MESSAGES[newsletterStatus]) {
+    showNewsletterNote(newsletterStatus, newsletterStatus === 'expired' || newsletterStatus === 'invalid');
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+  }
 }
 
 // ---------------- Utilidades de producto ----------------
