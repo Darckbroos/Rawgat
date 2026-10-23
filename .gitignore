@@ -3,3 +3,8 @@ node_modules/
 data/db.json
 public/assets/img/products/*
 !public/assets/img/products/.gitkeep
+
+# Datos locales y copias (contienen datos de clientes)
+data/*.json
+_backup-*/
+_entrega-*/
