@@ -53,7 +53,7 @@ const animateCount = (el) => {
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     const value = Math.floor(target * eased);
-    el.textContent = `${prefix}${value.toLocaleString('es-ES')}${suffix}`;
+    el.textContent = `${prefix}${value.toLocaleString('en-GB')}${suffix}`;
     if (progress < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -121,7 +121,7 @@ function applySecondaryFilters(list) {
       const sizes = Array.isArray(p.sizes) ? p.sizes : [];
       const hasStock = [...activeSizeFilters].some(size => {
         const entry = sizes.find(s => s.size === size);
-        return entry && entry.stock > 0;
+        return entry && entry.available;
       });
       if (!hasStock) return false;
     }
@@ -146,10 +146,10 @@ function renderProducts(products) {
   if (!refined.length) {
     if (!filtered.length) {
       grid.innerHTML = currentFilter.type === 'search'
-        ? `<p class="collection__loading">No encontramos productos para “${escapeHtml(currentFilter.value)}”.</p>`
-        : '<p class="collection__loading">No hay productos para este filtro todavía.</p>';
+        ? `<p class="collection__loading">We couldn't find products for "${escapeHtml(currentFilter.value)}".</p>`
+        : '<p class="collection__loading">No products for this filter yet.</p>';
     } else {
-      grid.innerHTML = '<p class="collection__loading">Ningún producto combina estos filtros. Probá quitando alguno.</p>';
+      grid.innerHTML = '<p class="collection__loading">No product matches these filters. Try removing one.</p>';
     }
     return;
   }
@@ -168,8 +168,8 @@ let currentFilter = { type: 'audience', value: 'Todos' };
 
 const collectionEyebrowEl = document.getElementById('collectionEyebrow');
 const collectionHeadingEl = document.getElementById('collectionHeading');
-const DEFAULT_COLLECTION_EYEBROW = collectionEyebrowEl ? collectionEyebrowEl.textContent : 'Colección';
-const DEFAULT_COLLECTION_HEADING = collectionHeadingEl ? collectionHeadingEl.textContent : 'Equípate para la aventura';
+const DEFAULT_COLLECTION_EYEBROW = collectionEyebrowEl ? collectionEyebrowEl.textContent : 'Collection';
+const DEFAULT_COLLECTION_HEADING = collectionHeadingEl ? collectionHeadingEl.textContent : 'Gear up for the adventure';
 
 function resetCollectionHeading() {
   if (collectionEyebrowEl) collectionEyebrowEl.textContent = DEFAULT_COLLECTION_EYEBROW;
@@ -177,8 +177,8 @@ function resetCollectionHeading() {
 }
 
 function showSearchHeading(query) {
-  if (collectionEyebrowEl) collectionEyebrowEl.textContent = 'Resultados de búsqueda';
-  if (collectionHeadingEl) collectionHeadingEl.textContent = `“${query}”`;
+  if (collectionEyebrowEl) collectionEyebrowEl.textContent = 'Search results';
+  if (collectionHeadingEl) collectionHeadingEl.textContent = `"${query}"`;
 }
 
 // Las mismas categorías se eligen desde el menú superior (como en las tiendas
@@ -298,7 +298,7 @@ document.addEventListener('rawgat:products', (e) => {
 
 document.addEventListener('rawgat:products-error', () => {
   const grid = document.getElementById('collectionGrid');
-  if (grid) grid.innerHTML = '<p class="collection__loading">No se pudo cargar la colección. Intenta de nuevo más tarde.</p>';
+  if (grid) grid.innerHTML = '<p class="collection__loading">Could not load the collection. Please try again later.</p>';
 });
 
 document.addEventListener('rawgat:discount', (e) => {
@@ -306,11 +306,11 @@ document.addEventListener('rawgat:discount', (e) => {
   if (!heading) return;
   const discount = e.detail;
   if (!discount) {
-    heading.textContent = 'Súmate y entérate primero de nuestros descuentos';
+    heading.textContent = 'Sign up and be the first to hear about our discounts';
     return;
   }
   const percent = Number(discount.percent) || 0;
   const code = escapeHtml(discount.code);
-  heading.innerHTML = `Regístrate y obtén ${percent}% de descuento con el código ${code} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span>`;
+  heading.innerHTML = `Sign up and get ${percent}% off with code ${code} <span class="countdown" data-expires="${escapeHtml(discount.expiresAt || '')}"></span>`;
   updateCountdowns();
 });

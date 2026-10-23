@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
@@ -11,7 +12,7 @@ function nextId(list) {
 // "Única" cubre productos sin talla real (accesorios): así todo producto
 // usa la misma estructura de stock por talla, sin dos caminos de código.
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Única'];
-const AUDIENCES = ['Hombre', 'Mujer', 'Niños', 'Unisex'];
+const AUDIENCES = ['Men', 'Women', 'Kids', 'Unisex'];
 
 function normalizeSizes(input) {
   const bySize = new Map();
@@ -105,10 +106,9 @@ function buildDefaultData() {
       passwordHash: bcrypt.hashSync(adminPassword, 10)
     },
     products: [
-      { id: 1, name: 'Pantalón Gastón', description: 'Elastano 4 vías, corte cónico, refuerzo en rodilla.', price: 44.90, category: 'Pantalones', tag: 'Más vendido', icon: 'pants', audience: 'Hombre', sizes: normalizeSizes([{ size: 'S', stock: 4 }, { size: 'M', stock: 8 }, { size: 'L', stock: 7 }, { size: 'XL', stock: 5 }]), active: true, createdAt: new Date().toISOString() },
-      { id: 2, name: 'Polerón Muro', description: 'Softshell liviano, capucha compatible con casco.', price: 59.90, category: 'Poleras', tag: 'Nuevo', icon: 'hoodie', audience: 'Unisex', sizes: normalizeSizes([{ size: 'S', stock: 3 }, { size: 'M', stock: 5 }, { size: 'L', stock: 4 }, { size: 'XL', stock: 3 }]), active: true, createdAt: new Date().toISOString() },
-      { id: 3, name: 'Camiseta Roca Seca', description: 'Tejido técnico anti-olor, secado ultra rápido.', price: 24.90, category: 'Poleras', tag: '', icon: 'shirt', audience: 'Mujer', sizes: normalizeSizes([{ size: 'XS', stock: 5 }, { size: 'S', stock: 9 }, { size: 'M', stock: 10 }, { size: 'L', stock: 8 }]), active: true, createdAt: new Date().toISOString() },
-      { id: 4, name: 'Chalk Bag Cóndor', description: 'Cierre de cordón, cepillo integrado, correa ajustable.', price: 19.90, category: 'Accesorios', tag: '', icon: 'chalkbag', audience: 'Unisex', sizes: normalizeSizes([{ size: 'Única', stock: 40 }]), active: true, createdAt: new Date().toISOString() }
+      { id: 1, name: 'Dry Rock Tee', description: 'Anti-odor technical fabric, ultra-fast drying.', price: 24.90, category: 'T-Shirts', tag: '', icon: 'shirt', audience: 'Men', sizes: normalizeSizes([{ size: 'S', stock: 5 }, { size: 'M', stock: 10 }, { size: 'L', stock: 6 }]), active: true, createdAt: new Date().toISOString() },
+      { id: 2, name: 'Hangboard', description: 'Finger training board for climbers, 3D printed. Edges: 40mm, 30mm, 20mm.', price: 45.10, category: 'Accessories', tag: '', icon: 'chalkbag', audience: 'Unisex', sizes: normalizeSizes([{ size: 'Única', stock: 10 }]), active: true, createdAt: new Date().toISOString() },
+      { id: 3, name: 'Monoboard', description: 'Finger training accessory for climbing, 3D printed. It attaches through the central hole to build grip strength and endurance using your own body weight or added resistance. Compact, sturdy design.', price: 20.00, category: 'Accessories', tag: 'New', icon: 'chalkbag', audience: 'Unisex', sizes: normalizeSizes([{ size: 'Única', stock: 2 }]), active: true, createdAt: new Date().toISOString() }
     ],
     discounts: [
       { id: 1, code: 'PRIMERAVEZ10', description: '10% de descuento en tu primera compra', percent: 10, active: true, expiresAt: null, scope: 'all', scopeValue: null, createdAt: new Date().toISOString() }
@@ -257,7 +257,7 @@ function updateAdminPassword(newPassword) {
 // para iniciar sesión, ver su historial y recibir el descuento de bienvenida.
 function sanitizeCustomer(customer) {
   if (!customer) return null;
-  const { passwordHash, ...safe } = customer;
+  const { passwordHash, verificationToken, verificationTokenExpires, ...safe } = customer;
   return safe;
 }
 
@@ -269,6 +269,12 @@ function getCustomerByEmail(email) {
 function getCustomerById(id) {
   return data.customers.find(c => c.id === Number(id)) || null;
 }
+
+// Una cuenta recién creada no puede usarse hasta confirmar el email (evita
+// cuentas falsas/bots dejando reseñas o farmeando el descuento de bienvenida):
+// nace con emailVerified en false y un token de un solo uso que expira a las
+// 24 horas (ver server/routes/customers.js y server/lib/email.js).
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 function createCustomer({ name, email, password }) {
   if (getCustomerByEmail(email)) {
@@ -283,6 +289,9 @@ function createCustomer({ name, email, password }) {
     address: '',
     welcomeDiscountPercent: 10,
     welcomeDiscountRedeemed: false,
+    emailVerified: false,
+    verificationToken: crypto.randomBytes(32).toString('hex'),
+    verificationTokenExpires: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString(),
     createdAt: new Date().toISOString()
   };
   data.customers.push(customer);
@@ -294,6 +303,34 @@ function verifyCustomerLogin(email, password) {
   const customer = getCustomerByEmail(email);
   if (!customer) return null;
   return bcrypt.compareSync(password, customer.passwordHash) ? customer : null;
+}
+
+// Genera un token nuevo (p. ej. para "reenviar email de confirmación") sin
+// tocar el resto de la cuenta.
+function regenerateVerificationToken(customerId) {
+  const customer = getCustomerById(customerId);
+  if (!customer) return null;
+  customer.verificationToken = crypto.randomBytes(32).toString('hex');
+  customer.verificationTokenExpires = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString();
+  save();
+  return customer;
+}
+
+// Confirma la cuenta a partir del link del email. Un token vencido no
+// verifica la cuenta pero sí identifica de quién es, para poder ofrecerle
+// reenviar el email sin que tenga que registrarse de nuevo.
+function verifyEmailToken(token) {
+  if (!token) return { error: 'invalid' };
+  const customer = data.customers.find(c => c.verificationToken === token);
+  if (!customer) return { error: 'invalid' };
+  if (!customer.verificationTokenExpires || new Date(customer.verificationTokenExpires) < new Date()) {
+    return { error: 'expired', customer };
+  }
+  customer.emailVerified = true;
+  customer.verificationToken = null;
+  customer.verificationTokenExpires = null;
+  save();
+  return { customer };
 }
 
 function updateCustomerProfile(id, input) {
@@ -413,8 +450,10 @@ function deleteProduct(id) {
 }
 
 // ---------- Reviews ----------
-// Se cargan a mano desde el admin (clientes reales que ya compraron) —
-// todavía no hay formulario público de reseñas.
+// Las escribe el cliente autenticado desde la ficha del producto (una por
+// cliente y producto — reenviar el formulario actualiza la existente en vez
+// de duplicarla). El admin solo puede verlas y borrarlas, no crearlas ni
+// editarlas: son la opinión real del cliente, no algo que el negocio redacte.
 function getReviews(productId) {
   return data.reviews
     .filter(r => r.productId === Number(productId))
@@ -428,10 +467,16 @@ function getAllReviews() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
+function getReviewByCustomerAndProduct(customerId, productId) {
+  if (customerId === undefined || customerId === null) return null;
+  return data.reviews.find(r => r.customerId === Number(customerId) && r.productId === Number(productId)) || null;
+}
+
 function addReview(input) {
   const review = {
     id: data._seq.review++,
     productId: Number(input.productId),
+    customerId: input.customerId !== undefined && input.customerId !== null ? Number(input.customerId) : null,
     customerName: String(input.customerName || '').trim(),
     rating: Math.min(5, Math.max(1, Math.round(Number(input.rating)) || 5)),
     text: String(input.text || '').trim(),
@@ -890,9 +935,10 @@ function importData(backup) {
 module.exports = {
   getAdmin, updateAdminPassword,
   sanitizeCustomer, getCustomerByEmail, getCustomerById, createCustomer, verifyCustomerLogin,
+  regenerateVerificationToken, verifyEmailToken,
   updateCustomerProfile, redeemWelcomeDiscount, getCustomerOrders, getCustomers, deleteCustomer,
   getProducts, addProduct, updateProduct, deleteProduct, decrementSizeStock,
-  getReviews, getAllReviews, addReview, updateReview, deleteReview,
+  getReviews, getAllReviews, getReviewByCustomerAndProduct, addReview, updateReview, deleteReview,
   SIZES, AUDIENCES,
   getDiscounts, getActiveDiscount, getEffectiveDiscountForProduct, addDiscount, updateDiscount, deleteDiscount,
   recordVisit, recordPurchase, getVisitsSeries, getPurchasesSeries, getProductPerformance, getSummary,

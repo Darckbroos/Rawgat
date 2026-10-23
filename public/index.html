@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAWGAT — Construido para durar, hecho para la montaña</title>
-<meta name="description" content="RAWGAT es la mentalidad del gato crudo: resistencia, libertad y disciplina para escaladores que buscan llegar donde otros no llegan.">
+<title>RAWGAT — Built to last, made for the mountain</title>
+<meta name="description" content="RAWGAT is the raw cat mindset: resilience, freedom and discipline for climbers who go where others don't.">
 <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<div class="topbar" id="topbar">Envío gratis en Chile por compras sobre $60.000 · Devoluciones dentro de 30 días</div>
+<div class="topbar" id="topbar">Free shipping in Europe on orders over €60 · Returns within 30 days</div>
 
 <header class="header" id="header">
   <div class="container header__inner">
@@ -22,28 +22,28 @@
     </a>
 
     <nav class="nav" id="nav">
-      <a href="#coleccion" data-audience="Todos" class="is-active">Colección</a>
-      <a href="#coleccion" data-audience="Hombre">Hombre</a>
-      <a href="#coleccion" data-audience="Mujer">Mujer</a>
-      <a href="#coleccion" data-audience="Niños">Niños</a>
-      <a href="#coleccion" data-category="Accesorios">Accesorios</a>
-      <a href="#coleccion" data-sale="true" class="nav__sale">Rebajas</a>
+      <a href="#coleccion" data-audience="Todos" class="is-active">Collection</a>
+      <a href="#coleccion" data-audience="Men">Men</a>
+      <a href="#coleccion" data-audience="Women">Women</a>
+      <a href="#coleccion" data-audience="Kids">Kids</a>
+      <a href="#coleccion" data-category="Accessories">Accessories</a>
+      <a href="#coleccion" data-sale="true" class="nav__sale">Sale</a>
     </nav>
 
     <div class="header__actions">
-      <a href="#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
-      <button class="search-btn" id="searchBtn" aria-label="Buscar productos">
+      <a href="#coleccion" class="btn btn--primary btn--sm">Shop now</a>
+      <button class="search-btn" id="searchBtn" aria-label="Search products">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <button class="account-btn" id="accountBtn" aria-label="Mi cuenta">
+      <button class="account-btn" id="accountBtn" aria-label="My account">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span class="account-btn__name" id="accountName" hidden></span>
       </button>
-      <button class="cart-btn" id="cartBtn" aria-label="Ver carrito">
+      <button class="cart-btn" id="cartBtn" aria-label="View cart">
         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
         <span class="cart-btn__count" id="cartCount" hidden>0</span>
       </button>
-      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -55,8 +55,8 @@
   <div class="container search-panel__inner">
     <form class="search-panel__form" id="searchForm">
       <svg class="search-panel__icon" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="search" id="searchInput" placeholder="Buscar en la colección: pantalón, chalk bag, arnés..." autocomplete="off">
-      <button type="button" class="search-panel__close" id="searchClose" aria-label="Cerrar búsqueda">&times;</button>
+      <input type="search" id="searchInput" placeholder="Search the collection: t-shirt, hangboard, monoboard..." autocomplete="off">
+      <button type="button" class="search-panel__close" id="searchClose" aria-label="Close search">&times;</button>
     </form>
     <div class="search-panel__results" id="searchResults" hidden></div>
   </div>
@@ -78,22 +78,22 @@
       <span class="floating-shape floating-shape--3" data-depth="10"></span>
       <div class="hero__badge" data-depth="26">
         <svg viewBox="0 0 48 48"><path d="M24 4 6 40h36L24 4Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
-        <span>5 años<br>garantía</span>
+        <span>5 years<br>warranty</span>
       </div>
     </div>
 
     <div class="container hero__content">
-      <p class="eyebrow">Dentro de la mente del gato crudo</p>
-      <h1>RAWGAT, construido para durar,<br>hecho para la montaña.</h1>
-      <p class="hero__lead">RAWGAT es sentirte capaz de lograr grandes hazañas, donde tus hábitos, tu pensamiento y entorno se alinean para dar el máximo en cada aventura.</p>
+      <p class="eyebrow">Inside the mind of the raw cat</p>
+      <h1>RAWGAT, built to last,<br>made for the mountain.</h1>
+      <p class="hero__lead">RAWGAT is feeling capable of achieving great feats, where your habits, mindset and environment align to give your best on every adventure.</p>
       <div class="hero__cta">
-        <a href="#coleccion" class="btn btn--primary">Ver colección</a>
-        <a href="#tecnologia" class="btn btn--ghost">Conoce la tecnología</a>
+        <a href="#coleccion" class="btn btn--primary">View collection</a>
+        <a href="#tecnologia" class="btn btn--ghost">Discover the technology</a>
       </div>
       <ul class="hero__stats">
-        <li><strong data-count="4800" data-prefix="+">0</strong><span>escaladores vistiendo RAWGAT</span></li>
-        <li><strong data-count="30" data-suffix=" días">0</strong><span>de prueba en la roca</span></li>
-        <li><strong data-count="5" data-suffix=" años">0</strong><span>de garantía en costuras</span></li>
+        <li><strong data-count="4800" data-prefix="+">0</strong><span>climbers wearing RAWGAT</span></li>
+        <li><strong data-count="30" data-suffix=" days">0</strong><span>on-the-rock trial</span></li>
+        <li><strong data-count="5" data-suffix=" years">0</strong><span>warranty on seams</span></li>
       </ul>
     </div>
   </section>
@@ -101,7 +101,7 @@
   <!-- LOGOS / TRUST -->
   <section class="trust">
     <div class="container trust__inner">
-      <span>Puesto a prueba en</span>
+      <span>Field-tested in</span>
       <div class="trust__marks">
         <span>El Chaltén</span>
         <span>Cochamó</span>
@@ -116,38 +116,38 @@
   <section class="features" id="tecnologia">
     <div class="container features__layout">
       <div class="section-head features__intro">
-        <p class="eyebrow">Por qué RAWGAT</p>
-        <h2>Tecnología creada para quienes nunca dejan de avanzar</h2>
-        <p>No diseñamos productos para verse bien en un estante. Los diseñamos para rendir cuando el terreno exige más de ti. Inspirados por la montaña, desarrollamos tecnología resistente, confiable y preparada para acompañarte en cada aventura. Porque el verdadero rendimiento se demuestra ahí afuera.</p>
+        <p class="eyebrow">Why RAWGAT</p>
+        <h2>Technology built for those who never stop moving forward</h2>
+        <p>We don't design products to look good on a shelf. We design them to perform when the terrain demands more from you. Inspired by the mountain, we develop technology that's tough, reliable and ready to go with you on every adventure. Because real performance is proven out there.</p>
       </div>
       <div class="features__grid">
         <article class="feature-card" data-tilt>
           <div class="feature-card__icon">
             <svg viewBox="0 0 48 48"><path d="M24 4 42 12v12c0 12-8 18-18 20-10-2-18-8-18-20V12L24 4Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
           </div>
-          <h3>Sin concesiones</h3>
-          <p>Elegimos materiales y procesos que respondan cuando el desafío aumenta.</p>
+          <h3>No compromises</h3>
+          <p>We choose materials and processes that hold up when the challenge grows.</p>
         </article>
         <article class="feature-card" data-tilt>
           <div class="feature-card__icon">
             <svg viewBox="0 0 48 48"><path d="M8 40 40 8M40 8H20M40 8v20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <h3>Hecho para avanzar</h3>
-          <p>Diseñamos equipo que acompaña tu progreso, desde el primer entrenamiento hasta los proyectos más ambiciosos.</p>
+          <h3>Built to progress</h3>
+          <p>We design gear that grows with you, from your first training session to your most ambitious projects.</p>
         </article>
         <article class="feature-card" data-tilt>
           <div class="feature-card__icon">
             <svg viewBox="0 0 48 48"><path d="M4 40 18 16l6 10 4-6 16 20H4Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m20 22 2-4 2 4" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
           </div>
-          <h3>Inspirado por la montaña</h3>
-          <p>La montaña nos enseñó que la resiliencia, la constancia y el respeto por el entorno son el camino hacia cualquier cima.</p>
+          <h3>Inspired by the mountain</h3>
+          <p>The mountain taught us that resilience, consistency and respect for the environment are the way to any summit.</p>
         </article>
         <article class="feature-card" data-tilt>
           <div class="feature-card__icon">
             <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="3"/><path d="m30 18-8 6-4 8 8-6 4-8Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
           </div>
           <h3>Rawgat Mindset</h3>
-          <p>Más que fabricar productos, promovemos una forma de enfrentar cada desafío: con determinación, disciplina y la convicción de que los límites siempre pueden moverse.</p>
+          <p>More than making products, we promote a way of facing every challenge: with determination, discipline and the conviction that limits can always be pushed.</p>
         </article>
       </div>
     </div>
@@ -158,22 +158,22 @@
     <div class="container">
       <div class="section-head collection__head">
         <div>
-          <p class="eyebrow" id="collectionEyebrow">Colección</p>
-          <h2 id="collectionHeading">Equípate para la aventura</h2>
+          <p class="eyebrow" id="collectionEyebrow">Collection</p>
+          <h2 id="collectionHeading">Gear up for the adventure</h2>
         </div>
         <label class="collection__sort">
-          Ordenar por
+          Sort by
           <select id="collectionSort">
-            <option value="relevancia">Relevancia</option>
-            <option value="novedad">Novedades</option>
-            <option value="precio-asc">Precio: menor a mayor</option>
-            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="relevancia">Relevance</option>
+            <option value="novedad">New arrivals</option>
+            <option value="precio-asc">Price: low to high</option>
+            <option value="precio-desc">Price: high to low</option>
           </select>
         </label>
       </div>
       <div class="collection__filters" id="collectionFilters">
         <div class="filter-group">
-          <span class="filter-group__label">Talla</span>
+          <span class="filter-group__label">Size</span>
           <div class="filter-chips" id="sizeFilterChips">
             <button type="button" data-size-filter="XS">XS</button>
             <button type="button" data-size-filter="S">S</button>
@@ -184,26 +184,26 @@
           </div>
         </div>
         <label class="filter-group filter-group--select">
-          <span class="filter-group__label">Precio</span>
+          <span class="filter-group__label">Price</span>
           <select id="priceFilterSelect">
-            <option value="">Todos los precios</option>
-            <option value="0-25">Menos de 25€</option>
-            <option value="25-50">25€ – 50€</option>
-            <option value="50-75">50€ – 75€</option>
-            <option value="75+">Más de 75€</option>
+            <option value="">All prices</option>
+            <option value="0-25">Under €25</option>
+            <option value="25-50">€25 – €50</option>
+            <option value="50-75">€50 – €75</option>
+            <option value="75+">Over €75</option>
           </select>
         </label>
         <label class="filter-checkbox">
           <input type="checkbox" id="discountFilterCheckbox">
-          Solo rebajas
+          On sale only
         </label>
-        <button type="button" class="filter-clear" id="clearFiltersBtn" hidden>Limpiar filtros ×</button>
+        <button type="button" class="filter-clear" id="clearFiltersBtn" hidden>Clear filters ×</button>
       </div>
       <div class="collection__grid" id="collectionGrid" data-tilt-root>
-        <p class="collection__loading">Cargando colección…</p>
+        <p class="collection__loading">Loading collection…</p>
       </div>
       <div class="collection__cta">
-        <a href="#contacto" class="btn btn--primary">Ver toda la colección</a>
+        <a href="#contacto" class="btn btn--primary">View full collection</a>
       </div>
     </div>
   </section>
@@ -212,14 +212,14 @@
   <section class="story" id="historia">
     <div class="container story__inner">
       <div class="story__media" data-tilt>
-        <img src="assets/img/historia-escalador.png" alt="Escalador superando un paso de roca en vía deportiva, con el logo de RAWGAT" class="story__photo">
+        <img src="assets/img/historia-escalador.png" alt="A climber pulling through a rock move on a sport route, with the RAWGAT logo" class="story__photo">
       </div>
       <div class="story__content">
-        <p class="eyebrow">Nuestra historia</p>
-        <h2>Nacimos en la roca, no en la oficina</h2>
-        <p>RAWGAT nació de una necesidad real, no de una moda: la de encontrar una marca de montaña que responda por lo que vende. Cansados de equipo que se rompía a la primera temporada y terminaba en la basura, apostamos por el reciclaje, por reparar antes que reemplazar, y le dijimos no a la moda rápida. Cada prenda se prueba primero en muro, boulder y roca antes de salir a la venta.</p>
-        <p>Ese mismo estándar es el que exigimos a quién vestimos: gente que no negocia con su equipo porque de eso depende su seguridad — élite, profesional, alto riesgo. El nombre viene de esa idea: <strong>raw</strong> (crudo, auténtico) y <strong>gat</strong>, el Gato Crudo que inspira nuestro logo — mitad montaña, mitad felino, equilibrio entre instinto y disciplina.</p>
-        <a href="#contacto" class="link-arrow">Conoce al equipo →</a>
+        <p class="eyebrow">Our story</p>
+        <h2>Born on the rock, not in the office</h2>
+        <p>RAWGAT was born from a real need, not a trend: finding a mountain brand that stands behind what it sells. Tired of gear that fell apart after one season and ended up in the trash, we bet on recycling, on repairing instead of replacing, and said no to fast fashion. Every piece is tested on the wall, on boulders and on real rock before it ever goes on sale.</p>
+        <p>That's the same standard we demand of the people we dress: those who don't compromise on their gear because their safety depends on it — elite, professional, high-risk. The name comes from that idea: <strong>raw</strong> (authentic, unrefined) and <strong>gat</strong>, the Raw Cat that inspires our logo — half mountain, half feline, a balance between instinct and discipline.</p>
+        <a href="#contacto" class="link-arrow">Meet the team →</a>
       </div>
     </div>
   </section>
@@ -228,21 +228,21 @@
   <section class="testimonials" id="opiniones">
     <div class="container">
       <div class="section-head">
-        <p class="eyebrow">Opiniones</p>
-        <h2>Lo que dice la comunidad</h2>
+        <p class="eyebrow">Reviews</p>
+        <h2>What the community says</h2>
       </div>
       <div class="testimonials__grid">
         <blockquote class="testimonial">
-          <p>"El pantalón Gastón aguantó tres días seguidos de fisuras en Cochamó sin una sola marca. Se mueve como una segunda piel."</p>
-          <footer><strong>Javiera M.</strong> — escaladora trad, 5.11</footer>
+          <p>"The Dry Rock Tee held up through three straight days of crack climbing in Cochamó without a single mark. It moves like a second skin."</p>
+          <footer><strong>Javiera M.</strong> — trad climber, 5.11</footer>
         </blockquote>
         <blockquote class="testimonial">
-          <p>"Primera marca chilena de escalada que se siente hecha por gente que realmente sube. El corte articulado se nota apenas te agachas a un high-step."</p>
+          <p>"The Hangboard is compact enough to travel with and tough enough for daily sessions. My finger strength has never been more consistent."</p>
           <footer><strong>Tomás R.</strong> — boulderer</footer>
         </blockquote>
         <blockquote class="testimonial">
-          <p>"Compré el polerón para el invierno en el muro y ahora es lo único que uso también para trekking. Calidad brutal."</p>
-          <footer><strong>Camila S.</strong> — instructora de escalada</footer>
+          <p>"I picked up the Monoboard for quick sessions between climbs and it's now part of my warm-up every single day. Brutal quality for something this small."</p>
+          <footer><strong>Camila S.</strong> — climbing instructor</footer>
         </blockquote>
       </div>
     </div>
@@ -252,15 +252,15 @@
   <section class="newsletter" id="contacto">
     <div class="container newsletter__inner">
       <div>
-        <p class="eyebrow eyebrow--light">Únete a la manada</p>
-        <h2 id="newsletterHeading">10% de descuento en tu primera compra</h2>
-        <p class="newsletter__lead">Súmate a la lista RAWGAT y recibe lanzamientos, guías de cuidado de prendas y descuentos exclusivos.</p>
+        <p class="eyebrow eyebrow--light">Join the pack</p>
+        <h2 id="newsletterHeading">10% off your first purchase</h2>
+        <p class="newsletter__lead">Join the RAWGAT list and get new releases, care guides and exclusive discounts.</p>
       </div>
       <form class="newsletter__form" id="newsletterForm">
-        <input type="email" name="email" placeholder="tu@correo.com" required aria-label="Correo electrónico">
-        <button type="submit" class="btn btn--primary">Quiero mi descuento</button>
+        <input type="email" name="email" placeholder="you@email.com" required aria-label="Email address">
+        <button type="submit" class="btn btn--primary">Get my discount</button>
       </form>
-      <p class="newsletter__note" id="newsletterNote" hidden>¡Gracias! Revisa tu correo para confirmar la suscripción.</p>
+      <p class="newsletter__note" id="newsletterNote" hidden>Thanks! Check your email to confirm your subscription.</p>
     </div>
   </section>
 
@@ -273,35 +273,34 @@
         <img src="assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
         <span class="brand__name">RAWGAT</span>
       </a>
-      <p>Construido para durar. Hecho para escalar.</p>
+      <p>Built to last. Made to climb.</p>
     </div>
 
     <div class="footer__col">
-      <h4>Tienda</h4>
-      <a href="#coleccion">Colección</a>
-      <a href="#coleccion">Poleras</a>
-      <a href="#coleccion">Pantalones</a>
-      <a href="#coleccion">Accesorios</a>
+      <h4>Shop</h4>
+      <a href="#coleccion">Collection</a>
+      <a href="#coleccion">T-Shirts</a>
+      <a href="#coleccion">Accessories</a>
     </div>
 
     <div class="footer__col">
-      <h4>Marca</h4>
-      <a href="#historia">Nuestra historia</a>
-      <a href="#tecnologia">Tecnología</a>
-      <a href="#opiniones">Opiniones</a>
+      <h4>Brand</h4>
+      <a href="#historia">Our story</a>
+      <a href="#tecnologia">Technology</a>
+      <a href="#opiniones">Reviews</a>
     </div>
 
     <div class="footer__col">
-      <h4>Ayuda</h4>
-      <a href="#contacto">Contacto</a>
-      <a href="#contacto">Envíos y devoluciones</a>
-      <a href="garantia.html">Garantía</a>
-      <a href="guia-tallas.html">Guía de tallas</a>
-      <a href="guia-cuidado.html">Cuidado de prendas</a>
+      <h4>Help</h4>
+      <a href="#contacto">Contact</a>
+      <a href="#contacto">Shipping & returns</a>
+      <a href="garantia.html">Warranty</a>
+      <a href="guia-tallas.html">Size guide</a>
+      <a href="guia-cuidado.html">Garment care</a>
     </div>
 
     <div class="footer__col footer__social">
-      <h4>Síguenos</h4>
+      <h4>Follow us</h4>
       <div class="social-links">
         <a href="#" aria-label="Instagram">IG</a>
         <a href="#" aria-label="TikTok">TT</a>
@@ -310,17 +309,17 @@
     </div>
   </div>
   <div class="container footer__bottom">
-    <span>© 2026 RAWGAT. Todos los derechos reservados.</span>
-    <span class="footer__legal-links"><a href="privacidad.html">Política de privacidad</a> · <a href="terminos.html">Términos y condiciones</a></span>
-    <span>Hecho en Chile para escaladores de todo el mundo.</span>
+    <span>© 2026 RAWGAT. All rights reserved.</span>
+    <span class="footer__legal-links"><a href="privacidad.html">Privacy policy</a> · <a href="terminos.html">Terms & conditions</a></span>
+    <span>Made in Chile for climbers around the world.</span>
   </div>
 </footer>
 
 <div class="account-overlay" id="accountOverlay"></div>
 <aside class="account-drawer" id="accountDrawer" aria-hidden="true">
   <div class="cart-drawer__header">
-    <h3>Mi cuenta</h3>
-    <button class="cart-drawer__close" id="accountClose" aria-label="Cerrar cuenta">&times;</button>
+    <h3>My account</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Close account">&times;</button>
   </div>
   <div class="cart-drawer__body" id="accountBody"></div>
 </aside>
@@ -328,19 +327,19 @@
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
   <div class="cart-drawer__header">
-    <h3>Tu carrito</h3>
-    <button class="cart-drawer__close" id="cartClose" aria-label="Cerrar carrito">&times;</button>
+    <h3>Your cart</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Close cart">&times;</button>
   </div>
   <div class="cart-drawer__body" id="cartBody">
-    <p class="cart-drawer__empty">Tu carrito está vacío.</p>
+    <p class="cart-drawer__empty">Your cart is empty.</p>
   </div>
   <div class="cart-drawer__footer" id="cartFooter" hidden>
     <div class="cart-drawer__total">
       <span>Total</span>
-      <strong id="cartTotal">0,00 €</strong>
+      <strong id="cartTotal">€0.00</strong>
     </div>
     <div id="paypalButtons"></div>
-    <p class="cart-drawer__demo-note">Pago de prueba (PayPal Sandbox) — no se realizan cobros reales.</p>
+    <p class="cart-drawer__demo-note">Test payment (PayPal Sandbox) — no real charges are made.</p>
   </div>
 </aside>
 

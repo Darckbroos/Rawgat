@@ -62,11 +62,25 @@ router.delete('/admin/api/products/:id', requireAuth, (req, res) => {
 
 // Mismo cálculo para el listado y para la ficha individual: un producto no
 // puede mostrar un precio en la vitrina y otro distinto en su propia página.
+//
+// El stock exacto es información interna del negocio: el cliente nunca debe
+// verlo (ni en pantalla ni inspeccionando la respuesta JSON de esta ruta).
+// Por eso acá se reemplaza el número real por "available"/"inStock"/"lowStock"
+// booleanos. El número real solo sigue viviendo en db.json y en las rutas
+// /admin/api/* (products.js admin, y checkout.js que consulta db.getProducts
+// directamente para validar y descontar stock al confirmar una compra).
+const LOW_STOCK_THRESHOLD = 5;
+
 function withPricing(product, isLoggedIn) {
   const discount = db.getEffectiveDiscountForProduct(product);
   const finalPrice = discount ? Math.round(product.price * (1 - discount.percent / 100) * 100) / 100 : product.price;
+  const totalStock = product.stock;
   return {
     ...product,
+    sizes: product.sizes.map(s => ({ size: s.size, available: s.stock > 0 })),
+    stock: undefined,
+    inStock: totalStock > 0,
+    lowStock: totalStock > 0 && totalStock <= LOW_STOCK_THRESHOLD,
     discount: discount ? {
       code: discount.code,
       percent: discount.percent,
@@ -79,22 +93,22 @@ function withPricing(product, isLoggedIn) {
   };
 }
 
-// Public read-only: incluye el descuento vigente (todo el sitio, categoría o
-// producto específico) y el precio final ya calculado para cada producto.
-// Los descuentos son solo para clientes registrados: quien no inició sesión
-// ve la etiqueta y el precio rebajado como vitrina ("discountLocked"), pero
-// el precio que paga (acá y en el checkout) es siempre el de lista.
+// Public read-only: includes the active discount (site-wide, by category or
+// by specific product) and the final price already calculated for each
+// product. Discounts are a registered-customer-only perk: a guest sees the
+// badge and the discounted price as a preview ("discountLocked"), but the
+// price actually charged (here and at checkout) is always the list price.
 router.get('/api/products', (req, res) => {
   const isLoggedIn = !!(req.session && req.session.customerId);
   res.json(db.getProducts({ onlyActive: true }).map(p => withPricing(p, isLoggedIn)));
 });
 
-// Ficha individual: misma info que el listado, para la página de producto
-// propia (/producto/:id). 404 si no existe o está desactivado.
+// Single product page: same data as the listing, for its own page
+// (/producto/:id). 404 if it doesn't exist or is disabled.
 router.get('/api/products/:id', (req, res) => {
   const isLoggedIn = !!(req.session && req.session.customerId);
   const product = db.getProducts({ onlyActive: true }).find(p => p.id === Number(req.params.id));
-  if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+  if (!product) return res.status(404).json({ error: 'Product not found' });
   res.json(withPricing(product, isLoggedIn));
 });
 

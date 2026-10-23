@@ -17,9 +17,9 @@ function renderProduct(p) {
   if (metaDesc) metaDesc.setAttribute('content', p.description || document.title);
 
   const media = document.getElementById('pdpMedia');
-  const outOfStock = Number(p.stock) <= 0;
+  const outOfStock = !p.inStock;
   media.innerHTML = `
-    ${outOfStock ? `<span class="tag tag--stock">Agotado</span>` : (p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : '')}
+    ${outOfStock ? `<span class="tag tag--stock">Sold out</span>` : (p.tag ? `<span class="tag">${escapeHtml(p.tag)}</span>` : '')}
     ${p.discount ? `<span class="tag tag--discount">-${Number(p.discount.percent) || 0}%</span>` : ''}
     ${p.image
       ? `<img class="product-card__photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`
@@ -39,7 +39,7 @@ function renderProduct(p) {
   const memberNote = document.getElementById('pdpMemberNote');
   if (locked) {
     memberNote.hidden = false;
-    memberNote.innerHTML = `Precio socio ${money(p.memberPrice)} · <button type="button" data-open-account>Regístrate para acceder</button>`;
+    memberNote.innerHTML = `Member price ${money(p.memberPrice)} · <button type="button" data-open-account>Sign up to unlock</button>`;
   } else {
     memberNote.hidden = true;
   }
@@ -55,19 +55,22 @@ function renderProduct(p) {
     sizeSelect.dataset.sizeSelect = String(p.id);
     sizeSelect.innerHTML = CLOTHING_SIZES.map(size => {
       const entry = sizes.find(s => s.size === size);
-      const stock = entry ? entry.stock : 0;
-      return `<option value="${size}" ${stock <= 0 ? 'disabled' : ''}>${size}${stock <= 0 ? ' (agotado)' : ''}</option>`;
+      const available = entry ? entry.available : false;
+      return `<option value="${size}" ${available ? '' : 'disabled'}>${size}${available ? '' : ' (sold out)'}</option>`;
     }).join('');
   } else {
     sizeLabel.hidden = true;
   }
 
+  // El servidor ya no manda cantidades exactas de stock, solo el booleano
+  // "lowStock" del producto (no distingue por talla) — se usa como aviso
+  // genérico, sin número, para no revelar cuánto queda exactamente.
   function updateStockNote() {
     const size = showSizePicker ? sizeSelect.value : 'Única';
-    const remaining = sizeStock(p, size);
-    if (!outOfStock && remaining > 0 && remaining <= LOW_STOCK_THRESHOLD) {
+    const available = showSizePicker ? sizeAvailable(p, size) : !outOfStock;
+    if (!outOfStock && available && p.lowStock) {
       stockNote.hidden = false;
-      stockNote.textContent = `¡Últimas ${remaining} unidades!`;
+      stockNote.textContent = 'Low stock — order soon!';
     } else {
       stockNote.hidden = true;
     }
@@ -78,7 +81,7 @@ function renderProduct(p) {
   const addBtn = document.getElementById('pdpAddBtn');
   addBtn.dataset.addToCart = String(p.id);
   addBtn.disabled = outOfStock;
-  addBtn.textContent = outOfStock ? 'Agotado' : 'Agregar al carrito';
+  addBtn.textContent = outOfStock ? 'Sold out' : 'Add to cart';
 
   pdpLoading.hidden = true;
   pdpSection.hidden = false;
@@ -93,8 +96,8 @@ function starString(rating) {
   return '★'.repeat(rating) + '☆'.repeat(5 - rating);
 }
 
-function loadReviews(id) {
-  fetch(`/api/products/${id}/reviews`)
+function loadReviewsList(id) {
+  return fetch(`/api/products/${id}/reviews`)
     .then(res => res.json())
     .then(reviews => {
       const section = document.getElementById('pdpReviews');
@@ -102,26 +105,128 @@ function loadReviews(id) {
       const list = document.getElementById('reviewsList');
 
       if (!reviews.length) {
-        summary.textContent = 'Todavía no hay reseñas para este producto.';
+        summary.textContent = 'No reviews yet for this product.';
         list.innerHTML = '';
         section.hidden = false;
         return;
       }
 
       const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-      summary.innerHTML = `<strong>${starString(Math.round(avg))}</strong> ${avg.toFixed(1)} de 5 · ${reviews.length} reseña${reviews.length === 1 ? '' : 's'}`;
+      summary.innerHTML = `<strong>${starString(Math.round(avg))}</strong> ${avg.toFixed(1)} out of 5 · ${reviews.length} review${reviews.length === 1 ? '' : 's'}`;
 
       list.innerHTML = reviews.map(r => `
         <blockquote class="testimonial pdp-review">
           <p class="pdp-review__stars">${starString(r.rating)}</p>
           <p>"${escapeHtml(r.text)}"</p>
-          <footer><strong>${escapeHtml(r.customerName)}</strong> — ${new Date(r.createdAt).toLocaleDateString('es-ES')}</footer>
+          <footer><strong>${escapeHtml(r.customerName)}</strong> — ${new Date(r.createdAt).toLocaleDateString('en-GB')}</footer>
         </blockquote>
       `).join('');
       section.hidden = false;
     })
     .catch(() => {});
 }
+
+// La reseña que el cliente que tiene la sesión abierta ya dejó en este
+// producto, si existe — se usa para abrir el formulario en modo "editar" en
+// vez de dejarlo crear una segunda.
+let myReview = null;
+
+// Formulario de reseña: solo se muestra el editor a un cliente con sesión
+// iniciada; a un visitante sin cuenta se le invita a iniciar sesión. Del
+// lado del servidor esto también se exige (requireCustomerAuth) — esto es
+// solo para no mostrar un formulario que igual va a rechazar el envío.
+function renderReviewForm(productId, successMessage) {
+  const container = document.getElementById('pdpReviewForm');
+  if (!container) return;
+
+  if (!currentCustomer) {
+    container.innerHTML = `
+      <p class="pdp-review-form__prompt">Bought this product? <button type="button" data-open-account>Sign in</button> to leave a review.</p>
+    `;
+    return;
+  }
+
+  const initialRating = myReview ? myReview.rating : 5;
+  container.innerHTML = `
+    <form class="account-form pdp-review-form__form" id="reviewForm">
+      <p class="pdp-review-form__title">${myReview ? 'Update your review' : 'Leave a review'}</p>
+      <div class="star-rating" id="reviewStars" role="radiogroup" aria-label="Rating">
+        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star-rating__star" data-star="${n}" aria-label="${n} star${n === 1 ? '' : 's'}">★</button>`).join('')}
+      </div>
+      <input type="hidden" name="rating" id="reviewRatingInput" value="${initialRating}">
+      <label>Your review
+        <textarea name="text" rows="3" maxlength="1000" required placeholder="What did you think of this product?">${myReview ? escapeHtml(myReview.text) : ''}</textarea>
+      </label>
+      <p class="account-form__error" id="reviewFormError" hidden></p>
+      <p class="account-form__success" id="reviewFormSuccess" ${successMessage ? '' : 'hidden'}>${successMessage ? escapeHtml(successMessage) : ''}</p>
+      <button type="submit" class="btn btn--primary btn--sm">${myReview ? 'Update review' : 'Submit review'}</button>
+    </form>
+  `;
+
+  const starsWrap = document.getElementById('reviewStars');
+  const ratingInput = document.getElementById('reviewRatingInput');
+  function paintStars(value) {
+    starsWrap.querySelectorAll('[data-star]').forEach(btn => {
+      btn.classList.toggle('is-active', Number(btn.dataset.star) <= value);
+    });
+  }
+  paintStars(Number(ratingInput.value));
+  starsWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-star]');
+    if (!btn) return;
+    ratingInput.value = btn.dataset.star;
+    paintStars(Number(btn.dataset.star));
+  });
+
+  document.getElementById('reviewForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const errorEl = document.getElementById('reviewFormError');
+    errorEl.hidden = true;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
+    fetch(`/api/products/${productId}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: ratingInput.value, text: form.text.value })
+    })
+      .then(async res => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || 'Could not save your review');
+        myReview = body;
+        renderReviewForm(productId, 'Thanks — your review has been posted.');
+        loadReviewsList(productId);
+      })
+      .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
+        errorEl.textContent = err.message;
+        errorEl.hidden = false;
+      });
+  });
+}
+
+function loadReviews(id) {
+  loadReviewsList(id);
+  renderReviewForm(id);
+  if (!currentCustomer) { myReview = null; return; }
+  fetch(`/api/products/${id}/my-review`)
+    .then(res => (res.ok ? res.json() : null))
+    .then(review => {
+      myReview = review;
+      renderReviewForm(id);
+    })
+    .catch(() => {});
+}
+
+// Cambios de sesión (iniciar/cerrar sesión, cambiar de cuenta) hechos desde
+// el cajón de cuenta de shared.js también deben actualizar este formulario.
+document.addEventListener('rawgat:account', () => {
+  if (currentProduct) loadReviews(currentProduct.id);
+});
 
 // Relacionados: misma categoría, sin el producto actual, hasta 4. La ficha
 // individual y el catálogo completo (PRODUCTS, en shared.js) llegan de dos

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cómo cuidar tus prendas técnicas — RAWGAT</title>
-<meta name="description" content="Guía RAWGAT para lavar y cuidar prendas técnicas de escalada: ripstop, softshell y tratamiento DWR, para que duren más.">
+<title>How to care for your technical gear — RAWGAT</title>
+<meta name="description" content="RAWGAT's guide to washing and caring for technical climbing gear: ripstop, softshell and DWR treatment, so it lasts longer.">
 <link rel="icon" type="image/svg+xml" href="/assets/img/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<div class="topbar" id="topbar">Envío gratis en Europa por compras sobre 60€ · Devoluciones dentro de 30 días</div>
+<div class="topbar" id="topbar">Free shipping in Europe on orders over €60 · Returns within 30 days</div>
 
 <header class="header" id="header">
   <div class="container header__inner">
@@ -22,28 +22,28 @@
     </a>
 
     <nav class="nav" id="nav">
-      <a href="/index.html#coleccion">Colección</a>
-      <a href="/index.html?audiencia=Hombre#coleccion">Hombre</a>
-      <a href="/index.html?audiencia=Mujer#coleccion">Mujer</a>
-      <a href="/index.html?audiencia=Niños#coleccion">Niños</a>
-      <a href="/index.html?categoria=Accesorios#coleccion">Accesorios</a>
-      <a href="/index.html?rebajas=1#coleccion" class="nav__sale">Rebajas</a>
+      <a href="/index.html#coleccion">Collection</a>
+      <a href="/index.html?audiencia=Men#coleccion">Men</a>
+      <a href="/index.html?audiencia=Women#coleccion">Women</a>
+      <a href="/index.html?audiencia=Kids#coleccion">Kids</a>
+      <a href="/index.html?categoria=Accessories#coleccion">Accessories</a>
+      <a href="/index.html?rebajas=1#coleccion" class="nav__sale">Sale</a>
     </nav>
 
     <div class="header__actions">
-      <a href="/index.html#coleccion" class="btn btn--primary btn--sm">Comprar ahora</a>
-      <button class="search-btn" id="searchBtn" aria-label="Buscar productos">
+      <a href="/index.html#coleccion" class="btn btn--primary btn--sm">Shop now</a>
+      <button class="search-btn" id="searchBtn" aria-label="Search products">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <button class="account-btn" id="accountBtn" aria-label="Mi cuenta">
+      <button class="account-btn" id="accountBtn" aria-label="My account">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span class="account-btn__name" id="accountName" hidden></span>
       </button>
-      <button class="cart-btn" id="cartBtn" aria-label="Ver carrito">
+      <button class="cart-btn" id="cartBtn" aria-label="View cart">
         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/></svg>
         <span class="cart-btn__count" id="cartCount" hidden>0</span>
       </button>
-      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -55,8 +55,8 @@
   <div class="container search-panel__inner">
     <form class="search-panel__form" id="searchForm">
       <svg class="search-panel__icon" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="search" id="searchInput" placeholder="Buscar en la colección: pantalón, chalk bag, arnés..." autocomplete="off">
-      <button type="button" class="search-panel__close" id="searchClose" aria-label="Cerrar búsqueda">&times;</button>
+      <input type="search" id="searchInput" placeholder="Search the collection: t-shirt, hangboard, monoboard..." autocomplete="off">
+      <button type="button" class="search-panel__close" id="searchClose" aria-label="Close search">&times;</button>
     </form>
     <div class="search-panel__results" id="searchResults" hidden></div>
   </div>
@@ -65,41 +65,41 @@
 <main>
   <section class="legal legal--compact">
     <div class="container" style="max-width:760px">
-      <p class="eyebrow">Guía RAWGAT</p>
-      <h1>Cómo cuidar tus prendas técnicas</h1>
-      <p>Reparar antes que reemplazar empieza por el lavado. Un tejido ripstop o un acabado repelente al agua (DWR) mal cuidados pierden su función mucho antes de gastarse de verdad. Esta guía es corta a propósito: son los hábitos que más alargan la vida útil de tu equipo.</p>
+      <p class="eyebrow">RAWGAT Guide</p>
+      <h1>How to care for your technical gear</h1>
+      <p>Repairing instead of replacing starts with how you wash. A poorly cared-for ripstop fabric or DWR water-repellent finish loses its function long before it actually wears out. This guide is short on purpose: these are the habits that extend your gear's lifespan the most.</p>
 
-      <h2>Antes de lavar</h2>
+      <h2>Before washing</h2>
       <ul>
-        <li>Cierra velcros y cremalleras para que no rocen ni enganchen otras prendas dentro del tambor.</li>
-        <li>Vacía los bolsillos — la tiza de magnesio dentro del lavado deja residuo en toda la carga.</li>
-        <li>Da vuelta la prenda: protege el exterior tratado (DWR) del roce directo con el tambor.</li>
+        <li>Close velcro and zippers so they don't rub or snag other garments inside the drum.</li>
+        <li>Empty the pockets — chalk left inside the wash leaves residue on the whole load.</li>
+        <li>Turn the garment inside out: it protects the treated (DWR) outer layer from direct friction with the drum.</li>
       </ul>
 
-      <h2>Lavado</h2>
+      <h2>Washing</h2>
       <ul>
-        <li>Agua fría o tibia (30°C máximo), ciclo suave.</li>
-        <li>Sin suavizante ni blanqueador: el suavizante tapa los poros del tejido y anula el DWR; el blanqueador degrada las fibras técnicas.</li>
-        <li>Detergente neutro, en poca cantidad — el exceso de detergente también reduce el repelente al agua.</li>
-        <li>Nunca en seco (tintorería) salvo que la etiqueta de la prenda lo indique explícitamente.</li>
+        <li>Cold or lukewarm water (30°C max), gentle cycle.</li>
+        <li>No fabric softener or bleach: softener clogs the fabric's pores and kills the DWR; bleach degrades technical fibers.</li>
+        <li>Mild detergent, in a small amount — too much detergent also reduces water repellency.</li>
+        <li>Never dry-clean unless the garment's label explicitly says to.</li>
       </ul>
 
-      <h2>Secado</h2>
+      <h2>Drying</h2>
       <ul>
-        <li>Al aire, lejos de una fuente de calor directa (radiador, sol pleno) y de fricción constante.</li>
-        <li>Si la prenda lo permite, un ciclo corto de secadora a baja temperatura reactiva el DWR mejor que el secado al aire — revisa la etiqueta antes.</li>
+        <li>Air dry, away from direct heat sources (radiator, full sun) and constant friction.</li>
+        <li>If the garment allows it, a short low-heat dryer cycle reactivates the DWR better than air drying — check the label first.</li>
       </ul>
 
-      <h2>Cuándo re-impermeabilizar</h2>
-      <p>Si el agua ya no forma gotas y empieza a "mojar" la tela en vez de resbalar, el DWR se gastó — no significa que la prenda esté rota. Un spray o lavado re-impermeabilizante (en cualquier tienda de montaña) suele devolverle la función sin reemplazar la prenda.</p>
+      <h2>When to re-waterproof</h2>
+      <p>If water no longer beads up and starts to "wet" the fabric instead of rolling off, the DWR has worn off — it doesn't mean the garment is broken. A re-waterproofing spray or wash-in treatment (available at any outdoor store) usually restores the function without replacing the garment.</p>
 
-      <h2>Entre uso y uso</h2>
+      <h2>Between uses</h2>
       <ul>
-        <li>Guarda tus prendas secas y sueltas, no comprimidas por meses — el tejido técnico se recupera peor de la compresión prolongada que el algodón.</li>
-        <li>Revisa costuras y refuerzos después de una temporada intensa: pillar un descosido a tiempo es lo que cubre la <a href="/garantia.html">garantía de 5 años</a>.</li>
+        <li>Store your gear dry and loose, not compressed for months — technical fabric recovers worse from prolonged compression than cotton does.</li>
+        <li>Check seams and reinforcements after an intense season: catching a loose seam early is what the <a href="/garantia.html">5-year warranty</a> covers.</li>
       </ul>
 
-      <div class="legal__notice">¿Tu prenda tiene un defecto de costura, no desgaste normal? Revisa la <a href="/garantia.html">página de garantía RAWGAT</a> para ver cómo reclamarla.</div>
+      <div class="legal__notice">Does your garment have a seam defect rather than normal wear? Check the <a href="/garantia.html">RAWGAT warranty page</a> to see how to claim it.</div>
     </div>
   </section>
 </main>
@@ -111,34 +111,33 @@
         <img src="/assets/img/logo.svg" alt="RAWGAT" class="brand__logo">
         <span class="brand__name">RAWGAT</span>
       </a>
-      <p>Construido para durar. Hecho para escalar.</p>
+      <p>Built to last. Made to climb.</p>
     </div>
 
     <div class="footer__col">
-      <h4>Tienda</h4>
-      <a href="/index.html#coleccion">Colección</a>
-      <a href="/index.html#coleccion">Poleras</a>
-      <a href="/index.html#coleccion">Pantalones</a>
-      <a href="/index.html#coleccion">Accesorios</a>
+      <h4>Shop</h4>
+      <a href="/index.html#coleccion">Collection</a>
+      <a href="/index.html#coleccion">T-Shirts</a>
+      <a href="/index.html#coleccion">Accessories</a>
     </div>
 
     <div class="footer__col">
-      <h4>Marca</h4>
-      <a href="/index.html#historia">Nuestra historia</a>
-      <a href="/index.html#tecnologia">Tecnología</a>
-      <a href="/index.html#opiniones">Opiniones</a>
+      <h4>Brand</h4>
+      <a href="/index.html#historia">Our story</a>
+      <a href="/index.html#tecnologia">Technology</a>
+      <a href="/index.html#opiniones">Reviews</a>
     </div>
 
     <div class="footer__col">
-      <h4>Ayuda</h4>
-      <a href="/index.html#contacto">Contacto</a>
-      <a href="/garantia.html">Garantía</a>
-      <a href="/guia-tallas.html">Guía de tallas</a>
-      <a href="/guia-cuidado.html">Cuidado de prendas</a>
+      <h4>Help</h4>
+      <a href="/index.html#contacto">Contact</a>
+      <a href="/garantia.html">Warranty</a>
+      <a href="/guia-tallas.html">Size guide</a>
+      <a href="/guia-cuidado.html">Garment care</a>
     </div>
 
     <div class="footer__col footer__social">
-      <h4>Síguenos</h4>
+      <h4>Follow us</h4>
       <div class="social-links">
         <a href="#" aria-label="Instagram">IG</a>
         <a href="#" aria-label="TikTok">TT</a>
@@ -147,17 +146,17 @@
     </div>
   </div>
   <div class="container footer__bottom">
-    <span>© 2026 RAWGAT. Todos los derechos reservados.</span>
-    <span class="footer__legal-links"><a href="/privacidad.html">Política de privacidad</a> · <a href="/terminos.html">Términos y condiciones</a></span>
-    <span>Hecho en Chile para escaladores de todo el mundo.</span>
+    <span>© 2026 RAWGAT. All rights reserved.</span>
+    <span class="footer__legal-links"><a href="/privacidad.html">Privacy policy</a> · <a href="/terminos.html">Terms & conditions</a></span>
+    <span>Made in Chile for climbers around the world.</span>
   </div>
 </footer>
 
 <div class="account-overlay" id="accountOverlay"></div>
 <aside class="account-drawer" id="accountDrawer" aria-hidden="true">
   <div class="cart-drawer__header">
-    <h3>Mi cuenta</h3>
-    <button class="cart-drawer__close" id="accountClose" aria-label="Cerrar cuenta">&times;</button>
+    <h3>My account</h3>
+    <button class="cart-drawer__close" id="accountClose" aria-label="Close account">&times;</button>
   </div>
   <div class="cart-drawer__body" id="accountBody"></div>
 </aside>
@@ -165,19 +164,19 @@
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
   <div class="cart-drawer__header">
-    <h3>Tu carrito</h3>
-    <button class="cart-drawer__close" id="cartClose" aria-label="Cerrar carrito">&times;</button>
+    <h3>Your cart</h3>
+    <button class="cart-drawer__close" id="cartClose" aria-label="Close cart">&times;</button>
   </div>
   <div class="cart-drawer__body" id="cartBody">
-    <p class="cart-drawer__empty">Tu carrito está vacío.</p>
+    <p class="cart-drawer__empty">Your cart is empty.</p>
   </div>
   <div class="cart-drawer__footer" id="cartFooter" hidden>
     <div class="cart-drawer__total">
       <span>Total</span>
-      <strong id="cartTotal">0,00 €</strong>
+      <strong id="cartTotal">€0.00</strong>
     </div>
     <div id="paypalButtons"></div>
-    <p class="cart-drawer__demo-note">Pago de prueba (PayPal Sandbox) — no se realizan cobros reales.</p>
+    <p class="cart-drawer__demo-note">Test payment (PayPal Sandbox) — no real charges are made.</p>
   </div>
 </aside>
 
