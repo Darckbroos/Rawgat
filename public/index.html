@@ -119,30 +119,56 @@
   <!-- 6. How it's made -->
   <section class="made" id="how-its-made">
     <div class="container">
-      <div class="section-head">
+      <div class="section-head made__head">
         <p class="eyebrow">HOW IT'S MADE</p>
-        <h2>From screen to wall.</h2>
+        <h2>Every tool is a project.</h2>
+        <p class="made__lead">You know the process: read the line, try it, adjust the beta, go again. That's how every RAWGAT tool gets made. Just with a printer instead of a rope.</p>
       </div>
     </div>
     <div class="container made__track-wrap">
       <ol class="made__track">
+        <!-- IMG-11: loop de vídeo (diseño en pantalla). Se reproduce solo al entrar en pantalla (main.js). -->
         <li class="made-step">
-          <div class="img-slot img-slot--dark" style="--ratio:4/3" role="img" aria-label="Image placeholder IMG-11"><span>IMG-11 · 4:3</span></div>
-          <p>1. Designed on screen.</p>
+          <figure class="make-step">
+            <video class="make-step__media" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback
+                   data-loop poster="/media/loops/img-11-design-poster.jpg" style="--poster:url('/media/loops/img-11-design-poster.jpg')"
+                   aria-label="RAWGAT training tool rotating in 3D design software">
+              <source src="/media/loops/img-11-design.webm" type="video/webm">
+              <source src="/media/loops/img-11-design.mp4" type="video/mp4">
+            </video>
+            <figcaption><span class="make-step__num">1</span><strong>Read the line.</strong> Every tool starts on screen, from one specific way of training. Edge depth, shape, where the cord runs: all decided before a single layer is printed.</figcaption>
+          </figure>
         </li>
+        <!-- IMG-12: loop de vídeo (impresión) -->
         <li class="made-step">
-          <div class="img-slot img-slot--dark" style="--ratio:4/3" role="img" aria-label="Image placeholder IMG-12"><span>IMG-12 · 4:3</span></div>
-          <p>2. Printed at home, layer by layer.</p>
+          <figure class="make-step">
+            <video class="make-step__media" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback
+                   data-loop poster="/media/loops/img-12-printing-poster.jpg" style="--poster:url('/media/loops/img-12-printing-poster.jpg')"
+                   aria-label="3D printer printing a RAWGAT piece layer by layer">
+              <source src="/media/loops/img-12-printing.webm" type="video/webm">
+              <source src="/media/loops/img-12-printing.mp4" type="video/mp4">
+            </video>
+            <figcaption><span class="make-step__num">2</span><strong>Work the moves.</strong> Printed in ASA, layer by layer, in a small workshop at home.</figcaption>
+          </figure>
         </li>
+        <!-- IMG-13: hueco de imagen hasta recibir la foto -->
         <li class="made-step">
-          <div class="img-slot img-slot--dark" style="--ratio:4/3" role="img" aria-label="Image placeholder IMG-13"><span>IMG-13 · 4:3</span></div>
-          <p>3. Cleaned and checked by hand.</p>
+          <figure class="make-step">
+            <div class="img-slot img-slot--dark" style="--ratio:4/3" role="img" aria-label="Image placeholder IMG-13"><span>IMG-13 · 4:3</span></div>
+            <figcaption><span class="make-step__num">3</span><strong>Fix the beta.</strong> Each version gets trained on, by me and climber friends I meet along the way. What doesn't feel right changes in the next print.</figcaption>
+          </figure>
         </li>
+        <!-- IMG-14: hueco de imagen hasta recibir la foto -->
         <li class="made-step">
-          <div class="img-slot img-slot--dark" style="--ratio:4/3" role="img" aria-label="Image placeholder IMG-14"><span>IMG-14 · 4:3</span></div>
-          <p>4. Trained on before it ships.</p>
+          <figure class="make-step">
+            <div class="img-slot img-slot--dark" style="--ratio:4/3" role="img" aria-label="Image placeholder IMG-14"><span>IMG-14 · 4:3</span></div>
+            <figcaption><span class="make-step__num">4</span><strong>Send it.</strong> Cleaned and checked by hand, then packed in the same workshop it was made in.</figcaption>
+          </figure>
         </li>
       </ol>
+    </div>
+    <div class="container">
+      <p class="made__closing">Small batches. Made at home. By a climber.</p>
     </div>
   </section>
 
