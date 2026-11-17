@@ -1820,3 +1820,49 @@ p { margin: 0 0 1em; color: var(--stone); }
 }
 .pdp2-reviews__form { text-align: center; margin: 8px 0 14px; }
 .newsletter__note--error { color: #ff9b8a; }
+
+/* How it's made v2 (informe rev. 17/11/2026): pasos numerados y loops de vídeo */
+.made__head { max-width: 680px; }
+.made__lead { color: rgba(246,244,239,.72); font-size: 1.05rem; margin-top: 4px; }
+.make-step { margin: 0; }
+/* El vídeo ocupa exactamente el hueco 4:3 (sin saltos al cargar). Debajo del
+   vídeo queda el póster como fondo: si el vídeo falla nunca se ve negro. */
+.make-step__media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--slot-dark) var(--poster) center / cover no-repeat;
+}
+.make-step__media--fallback { object-fit: cover; }
+.make-step figcaption {
+  margin-top: 16px;
+  color: rgba(246,244,239,.72);
+  font-size: .93rem;
+  line-height: 1.55;
+}
+.make-step figcaption strong { display: block; color: var(--white); font-size: 1.02rem; margin-bottom: 4px; }
+.make-step__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-2);
+  color: var(--accent-2);
+  font-size: .78rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.made-step p { margin: 0; }
+.made__closing {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  color: var(--white);
+  margin: 56px 0 0;
+}
+@media (max-width: 720px) {
+  .made__closing { margin-top: 36px; }
+}
